@@ -12,16 +12,19 @@ import {
   CheckCircle2,
   BookOpen,
   Zap,
+  Key,
 } from "lucide-react";
 import confetti from "canvas-confetti";
-import { MilestoneCelebration } from "./components/MilestoneCelebration";
+import { SocialChannelsBanner } from "./components/SocialChannelsBanner";
 import { ScriptStudio } from "./components/ScriptStudio";
 import { AudioPlayer } from "./components/AudioPlayer";
 import { CelebrationCard } from "./components/CelebrationCard";
 import { AudioHistoryList } from "./components/AudioHistoryList";
+import { ApiKeyModal } from "./components/ApiKeyModal";
 import { SAMPLE_MULTI_EMOJI_BENGALI, EMOJI_ACTING_RULES } from "./data/presets";
 import { AudioItem, SupportedLanguage } from "./types";
 import { base64ToUint8Array, pcmToWavBlob, calculatePcmDuration } from "./utils/audioUtils";
+import { generateSpeechDirectly } from "./utils/geminiClient";
 
 export default function App() {
   const [channelName, setChannelName] = useState("mdtarakboss2");
@@ -38,6 +41,20 @@ export default function App() {
   const [history, setHistory] = useState<AudioItem[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [customApiKey, setCustomApiKey] = useState<string>(() => {
+    return localStorage.getItem("banana_gemini_api_key") || "";
+  });
+
+  const handleSaveApiKey = (newKey: string) => {
+    setCustomApiKey(newKey);
+    if (newKey) {
+      localStorage.setItem("banana_gemini_api_key", newKey);
+      setSuccessToast("API Key সংরক্ষিত হয়েছে! এখন ভয়েস তৈরি করুন।");
+    } else {
+      localStorage.removeItem("banana_gemini_api_key");
+    }
+  };
 
   // Trigger welcome celebration fireworks
   useEffect(() => {
@@ -59,57 +76,93 @@ export default function App() {
     setErrorMessage(null);
     setSuccessToast(null);
 
+    let audioBase64: string | null = null;
+    let chunksCount = 1;
+
     try {
-      const response = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: text.trim(),
-          voiceName: selectedVoice,
-          language: language,
-        }),
-      });
+      // Step 1: Attempt Server/Vercel Serverless Function
+      let serverResponseWorked = false;
+      try {
+        const response = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: text.trim(),
+            voiceName: selectedVoice,
+            language: language,
+            apiKey: customApiKey || undefined,
+          }),
+        });
 
-      const contentType = response.headers.get("content-type") || "";
-      let data: any = null;
+        const contentType = response.headers.get("content-type") || "";
 
-      if (contentType.includes("application/json")) {
-        data = await response.json();
-      } else {
-        const textContent = await response.text();
-        console.error("Non-JSON Response received:", textContent);
-        throw new Error(
-          `সার্ভার থেকে সঠিক রেসপন্স পাওয়া যায়নি (Status: ${response.status})। অনুগ্রহ করে কিছু সময় পর আবার চেষ্টা করুন।`
+        if (response.ok && contentType.includes("application/json")) {
+          const data = await response.json();
+          if (data?.success && data?.audio) {
+            audioBase64 = data.audio;
+            chunksCount = data.totalChunks || 1;
+            serverResponseWorked = true;
+          }
+        } else if (response.status === 401 || (contentType.includes("application/json") && !response.ok)) {
+          const data = await response.json();
+          if (data?.error?.includes("GEMINI_API_KEY")) {
+            // Need API Key
+            setIsApiKeyModalOpen(true);
+            throw new Error(data.error);
+          }
+        }
+      } catch (serverErr: any) {
+        if (serverErr.message?.includes("GEMINI_API_KEY")) {
+          throw serverErr;
+        }
+        console.warn("Backend /api/tts unreachable or returned 404, attempting direct generation...", serverErr);
+      }
+
+      // Step 2: Fallback to Direct Browser Generation if server returned 404/static host
+      if (!serverResponseWorked || !audioBase64) {
+        if (!customApiKey) {
+          setIsApiKeyModalOpen(true);
+          throw new Error(
+            "Vercel / GitHub হোস্টিংয়ে ভয়েস চালু করার জন্য 'Vercel Environment Variable' এ GEMINI_API_KEY দিন অথবা সরাসরি API Key প্রবেশ করান।"
+          );
+        }
+
+        // Direct browser TTS generation
+        audioBase64 = await generateSpeechDirectly(
+          text.trim(),
+          selectedVoice,
+          language,
+          customApiKey
         );
       }
 
-      if (!response.ok || !data?.success || !data?.audio) {
-        throw new Error(data?.error || "ভয়েস জেনারেট করা সম্ভব হয়নি। অনুগ্রহ করে আবার চেষ্টা করুন।");
+      if (!audioBase64) {
+        throw new Error("ভয়েস তৈরি করা সম্ভব হয়নি। অনুগ্রহ করে আবার চেষ্টা করুন।");
       }
 
       // Convert PCM 24kHz to WAV Blob
-      const pcmBytes = base64ToUint8Array(data.audio);
-      const wavBlob = pcmToWavBlob(pcmBytes, data.sampleRate || 24000, 1);
+      const pcmBytes = base64ToUint8Array(audioBase64);
+      const wavBlob = pcmToWavBlob(pcmBytes, 24000, 1);
       const blobUrl = URL.createObjectURL(wavBlob);
-      const duration = calculatePcmDuration(pcmBytes.length, data.sampleRate || 24000, 16, 1);
+      const duration = calculatePcmDuration(pcmBytes.length, 24000, 16, 1);
 
       const newAudioItem: AudioItem = {
         id: `take_${Date.now()}`,
         text: text.trim(),
-        audioBase64: data.audio,
+        audioBase64: audioBase64,
         audioBlobUrl: blobUrl,
         voice: selectedVoice,
         language: language,
         createdAt: Date.now(),
         duration: duration,
-        totalChunks: data.totalChunks || 1,
+        totalChunks: chunksCount,
       };
 
       setCurrentAudio(newAudioItem);
       setHistory((prev) => [newAudioItem, ...prev]);
 
       const langTitle = language === "bengali" ? "বাংলা" : language === "hindi" ? "हिन्दी" : "English";
-      setSuccessToast(`MʀツBΛNΛNΛ VOICE generated successfully in ${langTitle} (${data.totalChunks || 1} chunks stitched)!`);
+      setSuccessToast(`MʀツBΛNΛNΛ VOICE generated successfully in ${langTitle}!`);
       setTimeout(() => setSuccessToast(null), 5000);
 
       // Celebration confetti
@@ -164,6 +217,20 @@ export default function App() {
             </div>
 
             <button
+              type="button"
+              onClick={() => setIsApiKeyModalOpen(true)}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                customApiKey
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20"
+                  : "bg-yellow-400/10 border-yellow-400/30 text-yellow-300 hover:bg-yellow-400/20"
+              }`}
+              title="Vercel & Gemini API Key Settings"
+            >
+              <Key className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Vercel / API Key</span>
+            </button>
+
+            <button
               onClick={() => {
                 confetti({
                   particleCount: 40,
@@ -183,25 +250,31 @@ export default function App() {
 
       {/* Main Container */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
-        {/* Milestone Celebration Banner */}
-        <MilestoneCelebration
-          channelName={channelName}
-          currentSubs={currentSubs}
-          targetSubs={1000}
-          daysTaken={daysTaken}
-        />
+        {/* Official Social Channels Banner */}
+        <SocialChannelsBanner />
 
         {/* Notifications / Toast */}
         {errorMessage && (
-          <div className="p-4 rounded-xl bg-red-950/50 border border-red-500/40 text-red-200 text-xs flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
-            <div className="flex-1">
-              <span className="font-semibold">Notice: </span>
-              <span>{errorMessage}</span>
+          <div className="p-4 rounded-xl bg-red-950/60 border border-red-500/40 text-red-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+              <div>
+                <span className="font-semibold">Notice: </span>
+                <span>{errorMessage}</span>
+              </div>
             </div>
-            <button onClick={() => setErrorMessage(null)} className="text-red-300 hover:text-white">
-              ✕
-            </button>
+            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsApiKeyModalOpen(true)}
+                className="px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-zinc-950 rounded-lg font-bold text-xs cursor-pointer"
+              >
+                ⚙️ API Key / Vercel Setup
+              </button>
+              <button onClick={() => setErrorMessage(null)} className="text-red-300 hover:text-white px-2 py-1 cursor-pointer">
+                ✕
+              </button>
+            </div>
           </div>
         )}
 
@@ -468,6 +541,14 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* Vercel & Gemini API Key Setup Modal */}
+      <ApiKeyModal
+        isOpen={isApiKeyModalOpen}
+        onClose={() => setIsApiKeyModalOpen(false)}
+        apiKey={customApiKey}
+        onSaveApiKey={handleSaveApiKey}
+      />
     </div>
   );
 }

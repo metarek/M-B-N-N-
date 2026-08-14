@@ -125,6 +125,7 @@ export function ScriptStudio({
     setEnhancingAction(action);
 
     try {
+      const apiKey = localStorage.getItem("banana_gemini_api_key") || undefined;
       const response = await fetch("/api/enhance-script", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -132,6 +133,7 @@ export function ScriptStudio({
           originalText: text,
           action: action,
           language: language,
+          apiKey: apiKey,
         }),
       });
 
