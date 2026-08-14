@@ -13,19 +13,16 @@ app.use(express.json({ limit: "50mb" }));
 
 let aiClient: GoogleGenAI | null = null;
 
-function getAIClient(): GoogleGenAI {
-  if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    aiClient = new GoogleGenAI({
-      apiKey: apiKey || "",
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        },
+function getAIClient(userKey?: string): GoogleGenAI {
+  const apiKey = userKey || process.env.GEMINI_API_KEY || "";
+  return new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        "User-Agent": "aistudio-build",
       },
-    });
-  }
-  return aiClient;
+    },
+  });
 }
 
 // Health check endpoint
@@ -151,13 +148,14 @@ app.post("/api/tts", async (req, res) => {
       language = "bengali",
       speed = 1.0,
       customPrompt = "",
+      apiKey = "",
     } = req.body;
 
     if (!text || typeof text !== "string" || text.trim().length === 0) {
       return res.status(400).json({ error: "Text is required for voice generation." });
     }
 
-    const ai = getAIClient();
+    const ai = getAIClient(apiKey);
     const langKey = (language === "english" || language === "hindi") ? language : "bengali";
 
     // Split text into chunks
@@ -260,6 +258,11 @@ app.post("/api/tts", async (req, res) => {
     }
 
     if (audioBuffers.length === 0) {
+      if (lastErrorMsg.includes("API key not valid") || lastErrorMsg.includes("API_KEY_INVALID")) {
+        return res.status(400).json({
+          error: "API Key টি সঠিক নয় বা মেয়াদোত্তীর্ণ (API key not valid)। অনুগ্রহ করে aistudio.google.com/app/apikey থেকে নতুন একটি ফ্রি Gemini API Key তৈরি করে বসান।",
+        });
+      }
       return res.status(500).json({
         error: `ভয়েস তৈরি করা সম্ভব হয়নি (${lastErrorMsg || "API Error"}). অনুগ্রহ করে নিশ্চিত করুন যে আপনার GEMINI_API_KEY সক্রিয় আছে।`,
       });

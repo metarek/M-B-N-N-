@@ -279,15 +279,36 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
           )}
         </div>
 
-        {/* Vercel Dashboard Instruction & No-Key note */}
-        <div className="bg-zinc-950/60 p-3.5 rounded-xl border border-zinc-800/80 text-[11px] text-zinc-400 space-y-2">
-          <div className="flex items-center gap-2 text-emerald-400 font-bold">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>কোনো API Key ছাড়াই সাইটটি এখন ১০০% কাজ করবে!</span>
+        {/* Realistic Voice Notice & Key Guidance */}
+        <div className="bg-zinc-950/80 p-3.5 rounded-xl border border-yellow-500/30 text-[11px] text-zinc-300 space-y-2">
+          <div className="flex items-center gap-2 text-yellow-400 font-bold">
+            <Sparkles className="w-4 h-4 text-yellow-400" />
+            <span>১০০% রিয়ালিস্টিক আল্ট্রা-এইচডি স্টুডিও ভয়েস চালু করুন</span>
           </div>
-          <p className="text-zinc-300">
-            কী খুঁজে না পেলেও কোনো সমস্যা নেই — আপনি এখনই সরাসরি <strong className="text-yellow-400">"ভয়েস তৈরি করুন"</strong> বাটনে ক্লিক করে বাংলা, হিন্দি ও ইংলিশ ভয়েস তৈরি ও ডাউনলোড করতে পারবেন।
+          <p className="text-zinc-300 leading-relaxed">
+            হুবহু মানুষের মতো আবেগপূর্ণ ও স্পষ্ট ভয়েস তৈরি করতে আপনার নিজস্ব <strong>Google Gemini API Key</strong> প্রয়োজন। 
+            কী-টি দেখতে সবসময় <code className="text-yellow-300 bg-zinc-800 px-1.5 py-0.5 rounded font-mono">AIzaSy...</code> দিয়ে শুরু হয়।
           </p>
+
+          <div className="bg-zinc-900/90 p-2.5 rounded-lg border border-zinc-800 text-[10px] space-y-1.5">
+            <div className="text-zinc-200 font-semibold">🔍 আসল AIzaSy কী বের করার নিয়ম:</div>
+            <ol className="list-decimal list-inside space-y-1 text-zinc-400">
+              <li>
+                <a
+                  href="https://console.cloud.google.com/apis/credentials"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-yellow-400 hover:underline font-semibold"
+                >
+                  console.cloud.google.com/apis/credentials
+                </a>{" "}
+                এ যান।
+              </li>
+              <li>সেখানে <strong>API Keys</strong> সেকশনের নিচে আপনার Key এর পাশে থাকা <strong>"SHOW KEY"</strong> বা চোখের আইকনে চাপ দিন।</li>
+              <li>সামনে আসা <code className="text-yellow-300 font-mono">AIzaSy...</code> লেখা কোডটি কপি করে এখানে পেস্ট করুন।</li>
+            </ol>
+          </div>
+
           <div className="pt-1 border-t border-zinc-800/60 flex items-center justify-between text-zinc-400">
             <span>💡 Vercel এ স্থায়ীভাবে যুক্ত করার নিয়ম:</span>
             <button

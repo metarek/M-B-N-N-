@@ -81,8 +81,10 @@ export default function App() {
     let chunksCount = 1;
 
     try {
-      // Step 1: Attempt Server/Vercel Serverless Function
+      // Step 1: Attempt Server Gemini Studio Generation
       let serverResponseWorked = false;
+      let serverErrorMessage = "";
+
       try {
         const response = await fetch("/api/tts", {
           method: "POST",
@@ -104,12 +106,15 @@ export default function App() {
             chunksCount = data.totalChunks || 1;
             serverResponseWorked = true;
           }
+        } else {
+          const errData = await response.json().catch(() => ({}));
+          serverErrorMessage = errData?.error || "Server AI voice generation error";
         }
       } catch (serverErr: any) {
         console.warn("Server TTS not responding, trying browser/direct methods...", serverErr);
       }
 
-      // Step 2: If server didn't provide audio and user has custom API Key, try direct Gemini
+      // Step 2: Direct Gemini Studio TTS with user's key if available
       if (!serverResponseWorked && customApiKey) {
         try {
           audioBase64 = await generateSpeechDirectly(
@@ -118,32 +123,32 @@ export default function App() {
             language,
             customApiKey
           );
+          if (audioBase64) {
+            serverResponseWorked = true;
+          }
         } catch (geminiErr: any) {
-          console.warn("Direct Gemini TTS error, falling back to Instant Web Speech engine:", geminiErr);
+          console.warn("Direct Gemini Studio TTS error:", geminiErr);
+          serverErrorMessage = geminiErr?.message || serverErrorMessage;
         }
       }
 
-      // Step 3: 100% Built-in Fallback — If no key or Gemini unavailable, generate via Instant Speech Engine!
-      let blobUrl = "";
-      let duration = 0;
-
-      if (audioBase64) {
-        // Convert PCM 24kHz to WAV Blob
-        const pcmBytes = base64ToUint8Array(audioBase64);
-        const wavBlob = pcmToWavBlob(pcmBytes, 24000, 1);
-        blobUrl = URL.createObjectURL(wavBlob);
-        duration = calculatePcmDuration(pcmBytes.length, 24000, 16, 1);
-      } else {
-        // Instant Browser Engine Fallback
-        const fallbackRes = await generateBrowserSpeechAudio(
-          text.trim(),
-          selectedVoice,
-          language
+      // If realistic AI generation failed and no key was configured
+      if (!audioBase64 && !customApiKey) {
+        setIsApiKeyModalOpen(true);
+        throw new Error(
+          "হুবহু মানুষের মতো রিয়ালিস্টিক আল্ট্রা-স্টুডিও ভয়েস পাওয়ার জন্য একটি ফ্রি Gemini API Key প্রয়োজন। অনুগ্রহ করে 'Vercel / API Key' বাটনে ক্লিক করে Key দিন।"
         );
-        blobUrl = fallbackRes.blobUrl;
-        duration = fallbackRes.duration;
-        audioBase64 = fallbackRes.base64Data;
       }
+
+      if (!audioBase64) {
+        throw new Error(serverErrorMessage || "AI ভয়েস তৈরি করা সম্ভব হয়নি। অনুগ্রহ করে আপনার API Key টি যাচাই করুন।");
+      }
+
+      // Convert PCM 24kHz to Studio High-Fidelity WAV Blob
+      const pcmBytes = base64ToUint8Array(audioBase64);
+      const wavBlob = pcmToWavBlob(pcmBytes, 24000, 1);
+      const blobUrl = URL.createObjectURL(wavBlob);
+      const duration = calculatePcmDuration(pcmBytes.length, 24000, 16, 1);
 
       const newAudioItem: AudioItem = {
         id: `take_${Date.now()}`,
@@ -173,25 +178,14 @@ export default function App() {
       });
     } catch (err: any) {
       console.error("TTS Error:", err);
-      // Even if any unexpected error occurs, do fallback
-      try {
-        const fallbackRes = await generateBrowserSpeechAudio(text.trim(), selectedVoice, language);
-        const newAudioItem: AudioItem = {
-          id: `take_${Date.now()}`,
-          text: text.trim(),
-          audioBase64: fallbackRes.base64Data,
-          audioBlobUrl: fallbackRes.blobUrl,
-          voice: selectedVoice,
-          language: language,
-          createdAt: Date.now(),
-          duration: fallbackRes.duration,
-          totalChunks: 1,
-        };
-        setCurrentAudio(newAudioItem);
-        setHistory((prev) => [newAudioItem, ...prev]);
-        setSuccessToast(`MʀツBΛNΛNΛ ভয়েস তৈরি সম্পন্ন হয়েছে!`);
-      } catch (finalErr: any) {
-        setErrorMessage("ভয়েস তৈরি করার সময় সমস্যা হয়েছে। অনুগ্রহ করে রিফ্রেশ করে চেষ্টা করুন।");
+      const msg = err.message || "";
+      if (msg.includes("API key not valid") || msg.includes("API_KEY_INVALID") || msg.includes("400")) {
+        setIsApiKeyModalOpen(true);
+        setErrorMessage(
+          "আপনার দেওয়া API Key টি সঠিক নয় বা মেয়াদোত্তীর্ণ। অনুগ্রহ করে নিচের 'AI Studio' লিংক থেকে ১ ক্লিকে একটি নতুন ফ্রি Gemini Key তৈরি করে দিন।"
+        );
+      } else {
+        setErrorMessage(msg || "ভয়েস তৈরি করার সময় সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।");
       }
     } finally {
       setIsLoadingAudio(false);
