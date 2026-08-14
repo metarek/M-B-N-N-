@@ -129,14 +129,6 @@ export const VOICES: VoiceOption[] = [
     bengaliVibe: "শান্ত, মধুর গল্পকার ও শিক্ষণীয় উপস্থাপনা",
     color: "from-purple-500 via-fuchsia-500 to-pink-500",
   },
-  {
-    id: "Leda",
-    name: "Leda (Youthful & Energetic)",
-    gender: "Female",
-    description: "Bright, cheerful, enthusiastic YouTuber & modern creator voice",
-    bengaliVibe: "প্রাণবন্ত, উচ্ছ্বসিত তরুণী ও স্মার্ট ইউটিউবার স্টাইল",
-    color: "from-amber-400 via-orange-500 to-rose-500",
-  },
 
   // --- MALE VOICES (ছেলের কণ্ঠ) ---
   {
@@ -170,14 +162,6 @@ export const VOICES: VoiceOption[] = [
     description: "Smooth, whispery, psychological thriller and chill podcast",
     bengaliVibe: "শান্ত, থ্রিলার ও ফিসফিসানি স্টাইল",
     color: "from-zinc-600 to-stone-800",
-  },
-  {
-    id: "Orus",
-    name: "Orus (Confident & Authority)",
-    gender: "Male",
-    description: "Authoritative, inspiring, motivational & broadcaster voice",
-    bengaliVibe: "আত্মবিশ্বাসী, মোটিভেশনাল ও বলিষ্ঠ বাচনভঙ্গি",
-    color: "from-emerald-500 to-teal-700",
   },
 ];
 

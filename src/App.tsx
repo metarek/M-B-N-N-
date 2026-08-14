@@ -70,10 +70,21 @@ export default function App() {
         }),
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get("content-type") || "";
+      let data: any = null;
 
-      if (!response.ok || !data.success || !data.audio) {
-        throw new Error(data.error || "Failed to generate speech with Gemini TTS.");
+      if (contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const textContent = await response.text();
+        console.error("Non-JSON Response received:", textContent);
+        throw new Error(
+          `সার্ভার থেকে সঠিক রেসপন্স পাওয়া যায়নি (Status: ${response.status})। অনুগ্রহ করে কিছু সময় পর আবার চেষ্টা করুন।`
+        );
+      }
+
+      if (!response.ok || !data?.success || !data?.audio) {
+        throw new Error(data?.error || "ভয়েস জেনারেট করা সম্ভব হয়নি। অনুগ্রহ করে আবার চেষ্টা করুন।");
       }
 
       // Convert PCM 24kHz to WAV Blob

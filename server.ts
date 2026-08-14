@@ -168,15 +168,21 @@ app.post("/api/tts", async (req, res) => {
       "Charon",
       "Kore",
       "Fenrir",
-      "Zephyr",
       "Aoede",
-      "Leda",
-      "Orus",
+      "Zephyr",
     ];
-    const chosenVoice = allowedVoices.includes(voiceName) ? voiceName : "Puck";
+    let chosenVoice = "Puck";
+    if (allowedVoices.includes(voiceName)) {
+      chosenVoice = voiceName;
+    } else if (voiceName?.toLowerCase()?.includes("female") || voiceName === "Leda") {
+      chosenVoice = "Kore";
+    } else if (voiceName === "Orus") {
+      chosenVoice = "Fenrir";
+    }
 
-    // Generate audio for each chunk sequentially or with controlled concurrency
+    // Generate audio for each chunk sequentially with retry
     const audioBuffers: Buffer[] = [];
+    let lastErrorMsg = "";
 
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
@@ -188,6 +194,9 @@ app.post("/api/tts", async (req, res) => {
         promptText = `${chunk.directive} ${chunk.text}`;
       }
 
+      let generated = false;
+
+      // Attempt 1: with expressive directive
       try {
         const response = await ai.models.generateContent({
           model: "gemini-3.1-flash-tts-preview",
@@ -209,16 +218,50 @@ app.post("/api/tts", async (req, res) => {
         if (audioBase64) {
           const chunkBuffer = Buffer.from(audioBase64, "base64");
           audioBuffers.push(chunkBuffer);
+          generated = true;
         }
       } catch (chunkError: any) {
-        console.error(`Error generating chunk ${i + 1}/${chunks.length}:`, chunkError);
-        // Continue with other chunks if any fail
+        lastErrorMsg = chunkError?.message || String(chunkError);
+        console.warn(`Chunk ${i + 1}/${chunks.length} attempt 1 failed with voice ${chosenVoice}:`, lastErrorMsg);
+      }
+
+      // Attempt 2 (Fallback): simpler prompt if attempt 1 failed
+      if (!generated) {
+        try {
+          const fallbackPrompt = `Say in ${langKey}: ${chunk.text}`;
+          const fallbackVoice = chosenVoice === "Kore" || chosenVoice === "Aoede" ? "Kore" : "Puck";
+          const response = await ai.models.generateContent({
+            model: "gemini-3.1-flash-tts-preview",
+            contents: [{ parts: [{ text: fallbackPrompt }] }],
+            config: {
+              responseModalities: [Modality.AUDIO],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: fallbackVoice },
+                },
+              },
+            },
+          });
+
+          const candidate = response.candidates?.[0];
+          const audioPart = candidate?.content?.parts?.find((p) => p.inlineData && p.inlineData.data);
+          const audioBase64 = audioPart?.inlineData?.data || candidate?.content?.parts?.[0]?.inlineData?.data;
+
+          if (audioBase64) {
+            const chunkBuffer = Buffer.from(audioBase64, "base64");
+            audioBuffers.push(chunkBuffer);
+            generated = true;
+          }
+        } catch (fallbackErr: any) {
+          lastErrorMsg = fallbackErr?.message || String(fallbackErr);
+          console.error(`Chunk ${i + 1}/${chunks.length} fallback failed:`, lastErrorMsg);
+        }
       }
     }
 
     if (audioBuffers.length === 0) {
       return res.status(500).json({
-        error: "Failed to generate audio chunks. Please verify your GEMINI_API_KEY.",
+        error: `ভয়েস তৈরি করা সম্ভব হয়নি (${lastErrorMsg || "API Error"}). অনুগ্রহ করে নিশ্চিত করুন যে আপনার GEMINI_API_KEY সক্রিয় আছে।`,
       });
     }
 
@@ -316,6 +359,14 @@ Output ONLY the English text.`;
       error: error?.message || "Failed to process script enhancement.",
     });
   }
+});
+
+// Fallback for unhandled API routes
+app.all("/api/*", (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: `API Route not found: ${req.method} ${req.path}`,
+  });
 });
 
 async function startServer() {

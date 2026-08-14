@@ -135,9 +135,12 @@ export function ScriptStudio({
         }),
       });
 
-      const data = await response.json();
-      if (data.success && data.result) {
-        setText(data.result.trim());
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const data = await response.json();
+        if (data.success && data.result) {
+          setText(data.result.trim());
+        }
       }
     } catch (e) {
       console.error("AI script enhancement failed", e);
