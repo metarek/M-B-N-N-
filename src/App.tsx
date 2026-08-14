@@ -1,0 +1,462 @@
+import { useState, useEffect } from "react";
+import {
+  Sparkles,
+  Volume2,
+  Trophy,
+  Award,
+  Heart,
+  Share2,
+  Radio,
+  Edit3,
+  AlertCircle,
+  CheckCircle2,
+  BookOpen,
+  Zap,
+} from "lucide-react";
+import confetti from "canvas-confetti";
+import { MilestoneCelebration } from "./components/MilestoneCelebration";
+import { ScriptStudio } from "./components/ScriptStudio";
+import { AudioPlayer } from "./components/AudioPlayer";
+import { CelebrationCard } from "./components/CelebrationCard";
+import { AudioHistoryList } from "./components/AudioHistoryList";
+import { SAMPLE_MULTI_EMOJI_BENGALI, EMOJI_ACTING_RULES } from "./data/presets";
+import { AudioItem, SupportedLanguage } from "./types";
+import { base64ToUint8Array, pcmToWavBlob, calculatePcmDuration } from "./utils/audioUtils";
+
+export default function App() {
+  const [channelName, setChannelName] = useState("mdtarakboss2");
+  const [currentSubs, setCurrentSubs] = useState(100);
+  const [daysTaken, setDaysTaken] = useState(7);
+
+  const [activeTab, setActiveTab] = useState<"studio" | "badge" | "emojis" | "story">("studio");
+  const [text, setText] = useState(SAMPLE_MULTI_EMOJI_BENGALI);
+  const [selectedVoice, setSelectedVoice] = useState("Puck");
+  const [language, setLanguage] = useState<SupportedLanguage>("bengali");
+
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const [currentAudio, setCurrentAudio] = useState<AudioItem | null>(null);
+  const [history, setHistory] = useState<AudioItem[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
+
+  // Trigger welcome celebration fireworks
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      confetti({
+        particleCount: 50,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#facc15", "#f59e0b", "#10b981", "#ef4444"],
+      });
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleGenerateAudio = async () => {
+    if (!text.trim()) return;
+
+    setIsLoadingAudio(true);
+    setErrorMessage(null);
+    setSuccessToast(null);
+
+    try {
+      const response = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: text.trim(),
+          voiceName: selectedVoice,
+          language: language,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success || !data.audio) {
+        throw new Error(data.error || "Failed to generate speech with Gemini TTS.");
+      }
+
+      // Convert PCM 24kHz to WAV Blob
+      const pcmBytes = base64ToUint8Array(data.audio);
+      const wavBlob = pcmToWavBlob(pcmBytes, data.sampleRate || 24000, 1);
+      const blobUrl = URL.createObjectURL(wavBlob);
+      const duration = calculatePcmDuration(pcmBytes.length, data.sampleRate || 24000, 16, 1);
+
+      const newAudioItem: AudioItem = {
+        id: `take_${Date.now()}`,
+        text: text.trim(),
+        audioBase64: data.audio,
+        audioBlobUrl: blobUrl,
+        voice: selectedVoice,
+        language: language,
+        createdAt: Date.now(),
+        duration: duration,
+        totalChunks: data.totalChunks || 1,
+      };
+
+      setCurrentAudio(newAudioItem);
+      setHistory((prev) => [newAudioItem, ...prev]);
+
+      const langTitle = language === "bengali" ? "বাংলা" : language === "hindi" ? "हिन्दी" : "English";
+      setSuccessToast(`MʀツBΛNΛNΛ VOICE generated successfully in ${langTitle} (${data.totalChunks || 1} chunks stitched)!`);
+      setTimeout(() => setSuccessToast(null), 5000);
+
+      // Celebration confetti
+      confetti({
+        particleCount: 60,
+        spread: 90,
+        origin: { y: 0.7 },
+        colors: ["#facc15", "#f59e0b", "#10b981"],
+      });
+    } catch (err: any) {
+      console.error("TTS Error:", err);
+      setErrorMessage(err.message || "Something went wrong while generating speech.");
+    } finally {
+      setIsLoadingAudio(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-yellow-400 selection:text-zinc-950 pb-16">
+      {/* Top Navigation Bar with Banana Brand */}
+      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur-md border-b border-yellow-500/20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-yellow-400 via-amber-500 to-yellow-600 flex items-center justify-center shadow-lg shadow-yellow-500/30 text-zinc-950 font-black text-xl">
+              🍌
+            </div>
+            <div>
+              <h1 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
+                <span className="text-yellow-400">MʀツBΛNΛNΛ</span>
+                <span>VOICE</span>
+                <span className="text-[10px] uppercase font-extrabold bg-yellow-400/20 text-yellow-300 border border-yellow-400/40 px-2 py-0.5 rounded-full">
+                  20,000+ Words AI TTS
+                </span>
+              </h1>
+              <p className="text-[11px] text-zinc-400">
+                Emoji-Driven Voice Acting • বাংলা • English • हिन्दी • Gemini 3.1 Flash TTS
+              </p>
+            </div>
+          </div>
+
+          {/* Quick channel editor */}
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs">
+              <span className="text-zinc-400">Channel:</span>
+              <input
+                type="text"
+                value={channelName}
+                onChange={(e) => setChannelName(e.target.value)}
+                className="bg-transparent text-yellow-300 font-semibold focus:outline-none w-28 text-xs"
+                placeholder="Channel Name"
+              />
+            </div>
+
+            <button
+              onClick={() => {
+                confetti({
+                  particleCount: 40,
+                  spread: 60,
+                  origin: { y: 0.2 },
+                  colors: ["#facc15", "#f59e0b", "#10b981"],
+                });
+              }}
+              className="p-2 rounded-xl bg-zinc-900 border border-yellow-500/30 hover:border-yellow-400 text-yellow-400 hover:text-yellow-300 transition cursor-pointer"
+              title="Banana Celebration Sparkles"
+            >
+              <Sparkles className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Container */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
+        {/* Milestone Celebration Banner */}
+        <MilestoneCelebration
+          channelName={channelName}
+          currentSubs={currentSubs}
+          targetSubs={1000}
+          daysTaken={daysTaken}
+        />
+
+        {/* Notifications / Toast */}
+        {errorMessage && (
+          <div className="p-4 rounded-xl bg-red-950/50 border border-red-500/40 text-red-200 text-xs flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+            <div className="flex-1">
+              <span className="font-semibold">Notice: </span>
+              <span>{errorMessage}</span>
+            </div>
+            <button onClick={() => setErrorMessage(null)} className="text-red-300 hover:text-white">
+              ✕
+            </button>
+          </div>
+        )}
+
+        {successToast && (
+          <div className="p-3.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs flex items-center gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{successToast}</span>
+          </div>
+        )}
+
+        {/* Studio Navigation Tabs */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-zinc-800 pb-2">
+          <button
+            id="tab-voice-studio"
+            onClick={() => setActiveTab("studio")}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer ${
+              activeTab === "studio"
+                ? "bg-yellow-400 text-zinc-950 shadow-md shadow-yellow-500/30"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+            }`}
+          >
+            <Volume2 className="w-4 h-4" />
+            <span>Voice & TTS Studio (ভয়েস রেকর্ডার)</span>
+          </button>
+
+          <button
+            id="tab-emoji-guide"
+            onClick={() => setActiveTab("emojis")}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer ${
+              activeTab === "emojis"
+                ? "bg-yellow-400 text-zinc-950 shadow-md shadow-yellow-500/30"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>Emoji Acting Guide (ইমোজি গাইড)</span>
+          </button>
+
+          <button
+            id="tab-milestone-badge"
+            onClick={() => setActiveTab("badge")}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer ${
+              activeTab === "badge"
+                ? "bg-yellow-400 text-zinc-950 shadow-md shadow-yellow-500/30"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+            }`}
+          >
+            <Trophy className="w-4 h-4" />
+            <span>100 Subs Plaque / Card (সেলিব্রেশন কার্ড)</span>
+          </button>
+
+          <button
+            id="tab-creator-story"
+            onClick={() => setActiveTab("story")}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer ${
+              activeTab === "story"
+                ? "bg-yellow-400 text-zinc-950 shadow-md shadow-yellow-500/30"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+            }`}
+          >
+            <Heart className="w-4 h-4 text-rose-400" />
+            <span>Creator Journey (৭ দিনের গল্প)</span>
+          </button>
+        </div>
+
+        {/* Tab 1: Voice & TTS Studio */}
+        {activeTab === "studio" && (
+          <div className="space-y-6">
+            {/* Audio Player (when audio exists) */}
+            <AudioPlayer
+              audioBlobUrl={currentAudio?.audioBlobUrl || null}
+              text={currentAudio?.text || text}
+              voice={currentAudio?.voice || selectedVoice}
+              language={currentAudio?.language || language}
+              duration={currentAudio?.duration || 0}
+              totalChunks={currentAudio?.totalChunks || 1}
+            />
+
+            {/* Script & Voice Configurator */}
+            <ScriptStudio
+              text={text}
+              setText={setText}
+              selectedVoice={selectedVoice}
+              setSelectedVoice={setSelectedVoice}
+              language={language}
+              setLanguage={setLanguage}
+              onGenerateAudio={handleGenerateAudio}
+              isLoadingAudio={isLoadingAudio}
+            />
+
+            {/* Previous Takes / History */}
+            <AudioHistoryList
+              history={history}
+              currentAudioId={currentAudio?.id || null}
+              onSelectAudio={(item) => setCurrentAudio(item)}
+              onDeleteAudio={(id) => {
+                setHistory((prev) => prev.filter((h) => h.id !== id));
+                if (currentAudio?.id === id) {
+                  setCurrentAudio(null);
+                }
+              }}
+              onClearAll={() => {
+                setHistory([]);
+                setCurrentAudio(null);
+              }}
+            />
+          </div>
+        )}
+
+        {/* Tab 2: Emoji Acting Guide */}
+        {activeTab === "emojis" && (
+          <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6 md:p-8 space-y-6 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-yellow-400/20 border border-yellow-400/30 flex items-center justify-center text-2xl">
+                🎭
+              </div>
+              <div>
+                <h3 className="text-lg md:text-xl font-bold text-white">
+                  MʀツBΛNΛNΛ Emoji Expression Acting Rules
+                </h3>
+                <p className="text-xs md:text-sm text-zinc-400">
+                  যে লাইনের শুরুতে যে ইমোজি দিবেন, AI ভয়েস একদম হুবহু সেই ইমোশনে অ্যাক্ট করে পড়বে!
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {EMOJI_ACTING_RULES.map((rule) => (
+                <div
+                  key={rule.emoji}
+                  className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2 hover:border-yellow-500/40 transition"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-2xl">{rule.emoji}</span>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">{rule.name}</h4>
+                        <span className="text-xs text-yellow-400">{rule.bengaliName}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setText((prev) => `${rule.exampleLine}\n${prev}`);
+                        setActiveTab("studio");
+                      }}
+                      className="text-[11px] px-2.5 py-1 rounded bg-zinc-800 hover:bg-yellow-400 hover:text-zinc-950 text-zinc-300 font-semibold transition cursor-pointer"
+                    >
+                      Try Line
+                    </button>
+                  </div>
+                  <p className="text-xs text-zinc-400">{rule.styleDescription}</p>
+                  <div className="p-2 rounded bg-zinc-900/80 border border-zinc-800/80 text-xs text-zinc-300 font-sans">
+                    <span className="text-zinc-500 mr-1.5">Example:</span>
+                    <span>{rule.exampleLine}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Milestone Card & Banner */}
+        {activeTab === "badge" && (
+          <div className="space-y-6">
+            <CelebrationCard
+              channelName={channelName}
+              subCount={currentSubs}
+              daysTaken={daysTaken}
+            />
+
+            {/* Channel Milestone Stats Editor */}
+            <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-5 md:p-6 shadow-xl space-y-4">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-yellow-400" />
+                <span>Customize Milestone Card Details (কার্ড কাস্টমাইজ করুন)</span>
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                    YouTube Channel Name:
+                  </label>
+                  <input
+                    type="text"
+                    value={channelName}
+                    onChange={(e) => setChannelName(e.target.value)}
+                    className="w-full rounded-xl bg-zinc-950 border border-zinc-700 p-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                    Subscribers Achieved:
+                  </label>
+                  <input
+                    type="number"
+                    value={currentSubs}
+                    onChange={(e) => setCurrentSubs(parseInt(e.target.value) || 100)}
+                    className="w-full rounded-xl bg-zinc-950 border border-zinc-700 p-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 mb-1">
+                    Days Taken (Sprint):
+                  </label>
+                  <input
+                    type="number"
+                    value={daysTaken}
+                    onChange={(e) => setDaysTaken(parseInt(e.target.value) || 7)}
+                    className="w-full rounded-xl bg-zinc-950 border border-zinc-700 p-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 4: Creator Journey */}
+        {activeTab === "story" && (
+          <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6 md:p-8 space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-yellow-400/20 border border-yellow-400/30 flex items-center justify-center text-yellow-400 text-2xl">
+                🍌
+              </div>
+              <div>
+                <h3 className="text-lg md:text-xl font-bold text-white">
+                  {channelName} - ১০০ সাবস্ক্রাইবারের অসাধারণ যাত্রা!
+                </h3>
+                <p className="text-xs md:text-sm text-zinc-400">
+                  মাত্র ৭ দিনে ১০০ সাবস্ক্রাইবার অর্জন • পরবর্তী স্বপ্ন ১,০০০ পরিবারের
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-300 text-sm leading-relaxed space-y-3 font-sans">
+              <p className="font-semibold text-yellow-300">
+                &quot;🥳 হ্যালো guys! আজকে আমি অনেক খুশি! 😭 তোমরা আমাকে এতোটা সাপোর্ট করবা আমি জীবনেও ভাবতে পারিনাই! 😂 মাত্র ৭ দিনে আমাদের চ্যানেলে ১০০ টা subscriber complete হয়ে গেছে, হাহাহা! 😱 বিশ্বাসই হচ্ছে না রে ভাই! 😍 তো যারা এখনো subscribe করনাই, তাড়াতাড়ি subscribe করো! 🍌 তোমরা পাশে থাকলে মিস্টার ব্যানানা অতি দ্রুত ১ হাজারের একটা family বানিয়ে ফেলবে, ইনশাআল্লাহ!&quot;
+              </p>
+              <p className="text-xs text-zinc-400">
+                ইউটিউবে প্রথম ১০০ সাবস্ক্রাইবার পাওয়া যেকোনো কনটেন্ট ক্রিয়েটরের জন্য সবচেয়ে কঠিন ও আনন্দদায়ক একটি মুহূর্ত। আপনার দর্শকদের এই ভালোবাসাই আপনাকে ১,০০০ সাবস্ক্রাইবারের মাইলস্টোন ও মনিটাইজেশনের পথে দ্রুত নিয়ে যাবে!
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-1">
+                <span className="text-xs text-zinc-500 font-medium">Sprint Time</span>
+                <div className="text-xl font-bold text-emerald-400">7 Days Only ⚡</div>
+                <p className="text-[11px] text-zinc-400">Super fast channel momentum</p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-1">
+                <span className="text-xs text-zinc-500 font-medium">Milestone Achieved</span>
+                <div className="text-xl font-bold text-yellow-400">100 Subscribers 🎉</div>
+                <p className="text-[11px] text-zinc-400">First major community milestone</p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-1">
+                <span className="text-xs text-zinc-500 font-medium">Next Big Goal</span>
+                <div className="text-xl font-bold text-emerald-400">1,000 Family 🚀</div>
+                <p className="text-[11px] text-zinc-400">Target for YouTube Partner program</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
