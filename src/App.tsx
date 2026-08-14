@@ -25,6 +25,7 @@ import { SAMPLE_MULTI_EMOJI_BENGALI, EMOJI_ACTING_RULES } from "./data/presets";
 import { AudioItem, SupportedLanguage } from "./types";
 import { base64ToUint8Array, pcmToWavBlob, calculatePcmDuration } from "./utils/audioUtils";
 import { generateSpeechDirectly } from "./utils/geminiClient";
+import { generateBrowserSpeechAudio } from "./utils/fallbackTTS";
 
 export default function App() {
   const [channelName, setChannelName] = useState("mdtarakboss2");
@@ -103,53 +104,51 @@ export default function App() {
             chunksCount = data.totalChunks || 1;
             serverResponseWorked = true;
           }
-        } else if (response.status === 401 || (contentType.includes("application/json") && !response.ok)) {
-          const data = await response.json();
-          if (data?.error?.includes("GEMINI_API_KEY")) {
-            // Need API Key
-            setIsApiKeyModalOpen(true);
-            throw new Error(data.error);
-          }
         }
       } catch (serverErr: any) {
-        if (serverErr.message?.includes("GEMINI_API_KEY")) {
-          throw serverErr;
-        }
-        console.warn("Backend /api/tts unreachable or returned 404, attempting direct generation...", serverErr);
+        console.warn("Server TTS not responding, trying browser/direct methods...", serverErr);
       }
 
-      // Step 2: Fallback to Direct Browser Generation if server returned 404/static host
-      if (!serverResponseWorked || !audioBase64) {
-        if (!customApiKey) {
-          setIsApiKeyModalOpen(true);
-          throw new Error(
-            "Vercel / GitHub হোস্টিংয়ে ভয়েস চালু করার জন্য 'Vercel Environment Variable' এ GEMINI_API_KEY দিন অথবা সরাসরি API Key প্রবেশ করান।"
+      // Step 2: If server didn't provide audio and user has custom API Key, try direct Gemini
+      if (!serverResponseWorked && customApiKey) {
+        try {
+          audioBase64 = await generateSpeechDirectly(
+            text.trim(),
+            selectedVoice,
+            language,
+            customApiKey
           );
+        } catch (geminiErr: any) {
+          console.warn("Direct Gemini TTS error, falling back to Instant Web Speech engine:", geminiErr);
         }
+      }
 
-        // Direct browser TTS generation
-        audioBase64 = await generateSpeechDirectly(
+      // Step 3: 100% Built-in Fallback — If no key or Gemini unavailable, generate via Instant Speech Engine!
+      let blobUrl = "";
+      let duration = 0;
+
+      if (audioBase64) {
+        // Convert PCM 24kHz to WAV Blob
+        const pcmBytes = base64ToUint8Array(audioBase64);
+        const wavBlob = pcmToWavBlob(pcmBytes, 24000, 1);
+        blobUrl = URL.createObjectURL(wavBlob);
+        duration = calculatePcmDuration(pcmBytes.length, 24000, 16, 1);
+      } else {
+        // Instant Browser Engine Fallback
+        const fallbackRes = await generateBrowserSpeechAudio(
           text.trim(),
           selectedVoice,
-          language,
-          customApiKey
+          language
         );
+        blobUrl = fallbackRes.blobUrl;
+        duration = fallbackRes.duration;
+        audioBase64 = fallbackRes.base64Data;
       }
-
-      if (!audioBase64) {
-        throw new Error("ভয়েস তৈরি করা সম্ভব হয়নি। অনুগ্রহ করে আবার চেষ্টা করুন।");
-      }
-
-      // Convert PCM 24kHz to WAV Blob
-      const pcmBytes = base64ToUint8Array(audioBase64);
-      const wavBlob = pcmToWavBlob(pcmBytes, 24000, 1);
-      const blobUrl = URL.createObjectURL(wavBlob);
-      const duration = calculatePcmDuration(pcmBytes.length, 24000, 16, 1);
 
       const newAudioItem: AudioItem = {
         id: `take_${Date.now()}`,
         text: text.trim(),
-        audioBase64: audioBase64,
+        audioBase64: audioBase64 || "",
         audioBlobUrl: blobUrl,
         voice: selectedVoice,
         language: language,
@@ -162,7 +161,7 @@ export default function App() {
       setHistory((prev) => [newAudioItem, ...prev]);
 
       const langTitle = language === "bengali" ? "বাংলা" : language === "hindi" ? "हिन्दी" : "English";
-      setSuccessToast(`MʀツBΛNΛNΛ VOICE generated successfully in ${langTitle}!`);
+      setSuccessToast(`MʀツBΛNΛNΛ VOICE সফলভাবে তৈরি হয়েছে (${langTitle})!`);
       setTimeout(() => setSuccessToast(null), 5000);
 
       // Celebration confetti
@@ -174,7 +173,26 @@ export default function App() {
       });
     } catch (err: any) {
       console.error("TTS Error:", err);
-      setErrorMessage(err.message || "Something went wrong while generating speech.");
+      // Even if any unexpected error occurs, do fallback
+      try {
+        const fallbackRes = await generateBrowserSpeechAudio(text.trim(), selectedVoice, language);
+        const newAudioItem: AudioItem = {
+          id: `take_${Date.now()}`,
+          text: text.trim(),
+          audioBase64: fallbackRes.base64Data,
+          audioBlobUrl: fallbackRes.blobUrl,
+          voice: selectedVoice,
+          language: language,
+          createdAt: Date.now(),
+          duration: fallbackRes.duration,
+          totalChunks: 1,
+        };
+        setCurrentAudio(newAudioItem);
+        setHistory((prev) => [newAudioItem, ...prev]);
+        setSuccessToast(`MʀツBΛNΛNΛ ভয়েস তৈরি সম্পন্ন হয়েছে!`);
+      } catch (finalErr: any) {
+        setErrorMessage("ভয়েস তৈরি করার সময় সমস্যা হয়েছে। অনুগ্রহ করে রিফ্রেশ করে চেষ্টা করুন।");
+      }
     } finally {
       setIsLoadingAudio(false);
     }

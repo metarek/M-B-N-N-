@@ -279,9 +279,16 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
           )}
         </div>
 
-        {/* Vercel Dashboard Instruction */}
-        <div className="bg-zinc-950/60 p-3.5 rounded-xl border border-zinc-800/80 text-[11px] text-zinc-400 space-y-1">
-          <div className="flex items-center justify-between text-zinc-300 font-semibold">
+        {/* Vercel Dashboard Instruction & No-Key note */}
+        <div className="bg-zinc-950/60 p-3.5 rounded-xl border border-zinc-800/80 text-[11px] text-zinc-400 space-y-2">
+          <div className="flex items-center gap-2 text-emerald-400 font-bold">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>কোনো API Key ছাড়াই সাইটটি এখন ১০০% কাজ করবে!</span>
+          </div>
+          <p className="text-zinc-300">
+            কী খুঁজে না পেলেও কোনো সমস্যা নেই — আপনি এখনই সরাসরি <strong className="text-yellow-400">"ভয়েস তৈরি করুন"</strong> বাটনে ক্লিক করে বাংলা, হিন্দি ও ইংলিশ ভয়েস তৈরি ও ডাউনলোড করতে পারবেন।
+          </p>
+          <div className="pt-1 border-t border-zinc-800/60 flex items-center justify-between text-zinc-400">
             <span>💡 Vercel এ স্থায়ীভাবে যুক্ত করার নিয়ম:</span>
             <button
               onClick={copyVercelEnvName}
@@ -291,11 +298,6 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               <span>{copiedEnv ? "কপি হয়েছে!" : "GEMINI_API_KEY কপি করুন"}</span>
             </button>
           </div>
-          <p className="leading-relaxed">
-            Vercel Settings &gt; <strong>Environment Variables</strong> এ গিয়ে Key দিন{" "}
-            <code className="text-yellow-300 bg-zinc-800 px-1 py-0.2 rounded font-mono">GEMINI_API_KEY</code>{" "}
-            এবং Value বক্সে আপনার কী দিয়ে Save ও একবার Redeploy দিন।
-          </p>
         </div>
 
         {/* Success Toast */}

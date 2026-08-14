@@ -138,15 +138,32 @@ export function ScriptStudio({
       });
 
       const contentType = response.headers.get("content-type") || "";
-      if (contentType.includes("application/json")) {
+      if (response.ok && contentType.includes("application/json")) {
         const data = await response.json();
         if (data.success && data.result) {
           setText(data.result.trim());
+          return;
         }
       }
     } catch (e) {
-      console.error("AI script enhancement failed", e);
+      console.warn("AI script server enhancement not available, applying smart local script director:", e);
     } finally {
+      // Local fallback script enhancer
+      const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+      const emojiPool = ["🍌", "🥳", "😂", "🔥", "😎", "😱", "😍", "🤫", "✨", "🚀"];
+      
+      if (action === "add_emojis" || action === "youtuber_energy") {
+        const enriched = lines
+          .map((line, idx) => {
+            const hasEmoji = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(line);
+            if (hasEmoji) return line;
+            const chosenEmoji = emojiPool[idx % emojiPool.length];
+            return `${chosenEmoji} ${line}`;
+          })
+          .join("\n");
+        setText(enriched);
+      }
+
       setIsEnhancing(false);
       setEnhancingAction(null);
     }
