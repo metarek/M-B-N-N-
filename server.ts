@@ -36,8 +36,11 @@ function getAllAvailableKeys(userKey?: string): string[] {
 }
 
 function getAIClient(apiKey?: string): GoogleGenAI {
-  const keys = getAllAvailableKeys(apiKey);
-  const keyToUse = keys[0] || GEMINI_KEYS_POOL[0];
+  let keyToUse = apiKey;
+  if (!keyToUse) {
+    const keys = getAllAvailableKeys();
+    keyToUse = keys[0] || GEMINI_KEYS_POOL[0];
+  }
   return new GoogleGenAI({
     apiKey: keyToUse.trim().replace(/^["']|["']$/g, ""),
   });

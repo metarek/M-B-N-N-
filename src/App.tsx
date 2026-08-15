@@ -25,7 +25,6 @@ import { SAMPLE_MULTI_EMOJI_BENGALI, EMOJI_ACTING_RULES } from "./data/presets";
 import { AudioItem, SupportedLanguage } from "./types";
 import { base64ToUint8Array, pcmToWavBlob, calculatePcmDuration } from "./utils/audioUtils";
 import { generateSpeechDirectly } from "./utils/geminiClient";
-import { generateBrowserSpeechAudio } from "./utils/fallbackTTS";
 
 export default function App() {
   const [channelName, setChannelName] = useState("mdtarakboss2");
@@ -162,28 +161,19 @@ export default function App() {
         }
       }
 
-      let blobUrl = "";
-      let duration = 0;
-
-      if (audioBase64) {
-        // Convert PCM 24kHz to Studio High-Fidelity WAV Blob
-        const pcmBytes = base64ToUint8Array(audioBase64);
-        const wavBlob = pcmToWavBlob(pcmBytes, 24000, 1);
-        blobUrl = URL.createObjectURL(wavBlob);
-        duration = calculatePcmDuration(pcmBytes.length, 24000, 16, 1);
-      } else {
-        // Step 3: Instant Fallback Voice Engine - NEVER block or fail the user!
-        console.info("Using ultra-fast fallback voice engine due to temporary API rate limit...");
-        const fallbackRes = await generateBrowserSpeechAudio(
-          text.trim(),
-          selectedVoice,
-          language,
-          1.0
+      // If audioBase64 could not be obtained
+      if (!audioBase64) {
+        throw new Error(
+          serverErrorMessage ||
+          "Google AI Studio-এর ফ্রি কোটা এই মুহূর্তে কিছুটা ব্যস্ত। অনুগ্রহ করে কয়েক সেকেন্ড পর আবার চেষ্টা করুন অথবা 'Vercel / API Key' বাটনে আপনার নিজস্ব ফ্রি Gemini Key যোগ করুন।"
         );
-        blobUrl = fallbackRes.blobUrl;
-        duration = fallbackRes.duration;
-        audioBase64 = fallbackRes.base64Data;
       }
+
+      // Convert PCM 24kHz to Studio High-Fidelity WAV Blob
+      const pcmBytes = base64ToUint8Array(audioBase64);
+      const wavBlob = pcmToWavBlob(pcmBytes, 24000, 1);
+      const blobUrl = URL.createObjectURL(wavBlob);
+      const duration = calculatePcmDuration(pcmBytes.length, 24000, 16, 1);
 
       const newAudioItem: AudioItem = {
         id: `take_${Date.now()}`,
@@ -199,6 +189,10 @@ export default function App() {
 
       setCurrentAudio(newAudioItem);
       setHistory((prev) => [newAudioItem, ...prev]);
+
+      // Clear any pending error banners and countdowns
+      setErrorMessage(null);
+      setQuotaCountdown(null);
 
       const langTitle = language === "bengali" ? "বাংলা" : language === "hindi" ? "हिन्दी" : "English";
       setSuccessToast(`MʀツBΛNΛNΛ VOICE সফলভাবে তৈরি হয়েছে (${langTitle})!`);

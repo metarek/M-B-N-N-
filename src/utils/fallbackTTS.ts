@@ -118,10 +118,6 @@ export async function generateBrowserSpeechAudio(
     }
     const base64Data = btoa(binary);
 
-    // Speak with browser engine when played
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
-
     resolve({
       blobUrl,
       duration: estDuration,
