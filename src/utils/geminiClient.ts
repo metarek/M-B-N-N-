@@ -334,20 +334,9 @@ export async function generateSpeechDirectly(
         break;
       }
 
+      // If all keys failed in this pass, try one quick retry after 1s
       if (pass < maxPasses) {
-        let waitMs = 3000;
-        const retryMatch =
-          lastErrorMsg.match(/retry in\s+([\d\.]+)s/i) ||
-          lastErrorMsg.match(/retryDelay["']?\s*:\s*["']?(\d+)s?/i);
-        if (retryMatch && retryMatch[1]) {
-          const parsedSeconds = parseFloat(retryMatch[1]);
-          if (parsedSeconds <= 65) {
-            waitMs = Math.ceil(parsedSeconds * 1000) + 700;
-          } else {
-            break;
-          }
-        }
-        await new Promise((res) => setTimeout(res, waitMs));
+        await new Promise((res) => setTimeout(res, 1200));
       }
     }
 

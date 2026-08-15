@@ -144,8 +144,8 @@ export default function App() {
         console.warn("Server TTS not responding, trying browser/direct methods...", serverErr);
       }
 
-      // Step 2: Direct Gemini Studio TTS with user's key if available
-      if (!serverResponseWorked && customApiKey) {
+      // Step 2: Direct Gemini Studio TTS with embedded/user key fallback
+      if (!serverResponseWorked) {
         try {
           audioBase64 = await generateSpeechDirectly(
             text.trim(),
@@ -162,17 +162,8 @@ export default function App() {
         }
       }
 
-      // If realistic AI generation failed and no key was configured
-      if (!audioBase64 && !customApiKey) {
-        setIsApiKeyModalOpen(true);
-        throw new Error(
-          serverErrorMessage ||
-          "হুবহু মানুষের মতো রিয়ালিস্টিক আল্ট্রা-স্টুডিও ভয়েস পাওয়ার জন্য একটি ফ্রি Gemini API Key প্রয়োজন। অনুগ্রহ করে 'Vercel / API Key' বাটনে ক্লিক করে Key দিন।"
-        );
-      }
-
       if (!audioBase64) {
-        throw new Error(serverErrorMessage || "AI ভয়েস তৈরি করা সম্ভব হয়নি। অনুগ্রহ করে আপনার API Key টি যাচাই করুন।");
+        throw new Error(serverErrorMessage || "AI ভয়েস তৈরি করা সম্ভব হয়নি। অনুগ্রহ করে আবার চেষ্টা করুন।");
       }
 
       // Convert PCM 24kHz to Studio High-Fidelity WAV Blob
