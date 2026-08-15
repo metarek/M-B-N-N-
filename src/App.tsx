@@ -44,8 +44,16 @@ export default function App() {
   const [quotaCountdown, setQuotaCountdown] = useState<number | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const DEFAULT_PERMANENT_KEYS = "AIzaSyBSjAW0LOGzp7cPj0qMiU0Zi70aK0xsZvM, AIzaSyAR8RAi4YWaXHU9AT3oDBZIgU3yOP7se8U";
   const [customApiKey, setCustomApiKey] = useState<string>(() => {
-    return localStorage.getItem("banana_gemini_api_key") || "";
+    const saved = localStorage.getItem("banana_gemini_api_key");
+    if (!saved || !saved.includes("AIzaSyAR8RAi4YWaXHU9AT3oDBZIgU3yOP7se8U")) {
+      try {
+        localStorage.setItem("banana_gemini_api_key", DEFAULT_PERMANENT_KEYS);
+      } catch (_) {}
+      return DEFAULT_PERMANENT_KEYS;
+    }
+    return saved || DEFAULT_PERMANENT_KEYS;
   });
 
   // Automatic countdown timer for Quota rate limit

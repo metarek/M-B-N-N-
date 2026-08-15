@@ -15,40 +15,44 @@ export function getEmojiActingDirective(
   const isGamingModel =
     voiceName === "Mr.banana.gaming" ||
     voiceName === "Mr.banana.gaming.pro" ||
+    voiceName === "Puck" ||
     voiceName?.toLowerCase()?.includes("gaming") ||
     voiceName?.toLowerCase()?.includes("freefire");
 
+  // Strict breath-control directive for clean, professional studio audio without loud gasps or mic breath noise
+  const cleanBreathNotice = "Speak with controlled, smooth, silent breathing without any loud inhalation gasps, heavy panting, or audible microphone breath noises. Maintain clean, continuous and punchy vocal delivery.";
+
   if (isGamingModel) {
     // Master System Prompt — Free Fire Bangladeshi YouTuber Gaming Voice Engine
-    const baseGamingRole = `You are a real, famous Bangladeshi Free Fire gaming YouTuber and livestreamer talking directly into your studio mic while playing Free Fire. Speak ${langPrompt} with high-octane gamer energy, fast talking speed, lively YouTuber cadence, youthful charisma, breathless gaming reactions, and real human emotion (absolutely no robotic tone, no newsreader tone, no slow boring narrator tone).`;
+    const baseGamingRole = `You are a real, famous Bangladeshi Free Fire gaming YouTuber and livestreamer talking directly into your studio mic while playing Free Fire. Speak ${langPrompt} with high-octane gamer energy, fast talking speed, lively YouTuber cadence, youthful charisma, and real human emotion (absolutely no robotic tone, no newsreader tone, no slow boring narrator tone). ${cleanBreathNotice}`;
 
     // 1. One-tap, Headshot, Booyah, Victory, Hype screaming
     if (/booyah|headshot|one tap|clutch|victory|জিত|উইনার|খতম|সব শেষ|kill|কিল|অসাধারণ|let's go|lets go|op|ওপি|🔥|⚡|🚀|💥|🥳|🎉/i.test(textLine)) {
-      return `${baseGamingRole} SCREAM with explosive gamer joy, fast adrenaline-pumping hype, shouting in victory for the insane one-tap headshot and Booyah:`;
+      return `${baseGamingRole} Shout with explosive gamer joy, fast adrenaline-pumping hype, and victory excitement for the insane one-tap headshot and Booyah, with crisp vocal articulation and zero loud gasping sounds:`;
     }
     // 2. Suspense, HP Low, 1 vs 4, Zone, Clutch tension, Heartbeat
     if (/hp|low|১ জন|একাকী|1vs4|1v4|1 vs 4|zone|সাসপেন্স|আস্তে|ধীরে|লুকিয়ে|ক্যাম্প|😱|😨|😰|🫨|🤫|🤐|\.{3,}/i.test(textLine)) {
-      return `${baseGamingRole} Whisper and speak with heart-pounding gaming suspense, tense breathless anticipation, and dramatic quick pauses as enemy approaches:`;
+      return `${baseGamingRole} Speak with heart-pounding gaming suspense, tense gripping thrill, and dramatic quick pauses as enemy approaches, with clean quiet vocals and no audible breathing noises:`;
     }
     // 3. Rage, Knocked, Rush, Aggressive Fight, Squad clash
     if (/knock|নক|rush|রাশ|মেরে দিল|রিভাইভ|পালা|গুলিবৃষ্টি|এনিমি|enemy|gloo wall|গ্লু ওয়াল|দাঁড়া|দাঁড়াও|😡|🤬|👿|💢|😤/i.test(textLine)) {
-      return `${baseGamingRole} Speak with hyper-fast combat intensity, aggressive loud gamer battle cry, shouting fast squad orders with intense adrenaline:`;
+      return `${baseGamingRole} Speak with hyper-fast combat intensity, aggressive loud gamer battle cry, shouting fast squad orders with intense adrenaline, clean vocal tone and no loud panting:`;
     }
     // 4. Troll, Funny moments, Noob, Laughing, Roasting
     if (/noob|নুব|বট|bot|লল|lol|হাহা|মজা|troll|ফানি|😂|🤣|😹|😆|😃|😄|😁/.test(textLine)) {
-      return `${baseGamingRole} Burst into hilarious gamer laughter, playful teasing and teasing chuckles, delivering comedic YouTube trolling commentary:`;
+      return `${baseGamingRole} Burst into hilarious gamer laughter, playful teasing and teasing chuckles, delivering comedic YouTube trolling commentary cleanly:`;
     }
     // 5. Emotional, Sadness, Lost match, Heartbreak, Minus rank
     if (/হারলাম|মায়েন্স|minus|rank down|দুঃখ|কষ্ট|স্যারি|😭|😢|😿|🥺|💔/.test(textLine)) {
-      return `${baseGamingRole} Deliver with genuine sorrowful gamer sigh, emotional trembling voice, sincere sadness after losing rank:`;
+      return `${baseGamingRole} Deliver with genuine sorrowful gamer tone, emotional trembling voice, sincere sadness after losing rank, without heavy gasping:`;
     }
     // 6. Settings, Sensitivity, DPI, Tips & Tricks, Hook, Subscribe
     if (/setting|সেটিংস|sensitivity|সেনসিটিভিটি|dpi|টিপস|tips|ট্রিকস|গোপন|secret|সাবস্ক্রাইব|subscribe|লাইক|like|ভিডিও|video/i.test(textLine)) {
       return `${baseGamingRole} Deliver with a snappy, viral YouTube Shorts hook, fast engaging confidence, charismatic YouTuber intro and punchy subscriber call to action:`;
     }
 
-    // Default Gaming Master Streamer Tone
-    return `${baseGamingRole} Deliver with fast-paced, entertaining, lively Bangladeshi gaming streamer hype, natural gamer cadence, and loud punchy emphasis on gaming words:`;
+    // Default Gaming Master Streamer Tone (Puck / Gaming models)
+    return `${baseGamingRole} Deliver with fast-paced, entertaining, lively Bangladeshi gaming streamer hype, natural gamer cadence, smooth silent breath control, and loud punchy emphasis on gaming words:`;
   }
 
   const isDeepBananaModel =
@@ -60,40 +64,40 @@ export function getEmojiActingDirective(
 
   if (isDeepBananaModel) {
     if (/😭|😢|😿|🥺|💔/.test(textLine)) {
-      return `Say ${langPrompt} in a deep, heavy, emotional baritone voice with sincere sorrow, deep-toned sorrowful trembling and crystal clear diction:`;
+      return `Say ${langPrompt} in a deep, heavy, emotional baritone voice with sincere sorrow, deep-toned sorrowful trembling and crystal clear diction (no loud sniffing or mic breath noise):`;
     }
     if (/😂|🤣|😹|😆|😃|😄|😁/.test(textLine)) {
       return `Say ${langPrompt} in a deep, rich, masculine baritone bursting into hearty booming laughter, natural chuckles and joyful resonance:`;
     }
     if (/😡|🤬|👿|💢|😤/.test(textLine)) {
-      return `Say ${langPrompt} in a thunderous, deep, heavy masculine baritone with commanding fury, aggressive weight and powerful authority:`;
+      return `Say ${langPrompt} in a thunderous, deep, heavy masculine baritone with commanding fury, aggressive weight and powerful authority (clean vocal projection, no panting):`;
     }
     if (/😱|😨|😰|🫨|👻|💀/.test(textLine)) {
-      return `Say ${langPrompt} in a deep, heavy, dramatic tone with intense shock, gasping tension and striking suspense:`;
+      return `Say ${langPrompt} in a deep, heavy, dramatic tone with intense shock, striking suspense, and clean silent breath control:`;
     }
     if (/😍|🥰|😘|💖|❤️|💕|😻/.test(textLine)) {
       return `Say ${langPrompt} in a warm, rich, deep baritone voice with gentle affection, smooth melody and charismatic charm:`;
     }
     if (/🥳|🎉|🚀|💥|🔥|⚡/.test(textLine)) {
-      return `Say ${langPrompt} in a commanding, energetic, deep booming celebration voice with heavy punchy excitement and vibrant hype:`;
+      return `Say ${langPrompt} in a commanding, energetic, deep booming celebration voice with heavy punchy excitement, vibrant hype and clean audio:`;
     }
     if (/😎|😏|🕶️|👑|💅/.test(textLine)) {
       return `Say ${langPrompt} in an ultra-confident, deep, heavy boss voice with stylish swagger, masculine authority and charismatic weight:`;
     }
-    return `Say ${langPrompt} in a signature deep, heavy, crystal-clear, commanding masculine voice with rich baritone bass, studio broadcast clarity, full acoustic depth and powerful delivery (no high-pitch, no squeakiness):`;
+    return `Say ${langPrompt} in a signature deep, heavy, crystal-clear, commanding masculine voice with rich baritone bass, studio broadcast clarity, full acoustic depth, smooth silent breathing and powerful delivery (no high-pitch, no squeakiness, no loud breath noise):`;
   }
 
   if (/😭|😢|😿|🥺|💔/.test(textLine)) {
-    return `Say ${langPrompt} with genuine weeping, tearful sobbing, trembling voice, sniffing, and heartbreaking grief with clear diction:`;
+    return `Say ${langPrompt} with genuine weeping, tearful sobbing, trembling voice, and heartbreaking grief with clear diction and clean audio:`;
   }
   if (/😂|🤣|😹|😆|😃|😄|😁/.test(textLine)) {
     return `Say ${langPrompt} bursting into loud laughter, giggling uncontrollably, hearty chuckles, and clear joyful amusement:`;
   }
   if (/😡|🤬|👿|💢|😤/.test(textLine)) {
-    return `Say ${langPrompt} with fierce boiling anger, screaming rage, fiery aggression, and loud intense hostile furious emotion:`;
+    return `Say ${langPrompt} with fierce boiling anger, screaming rage, fiery aggression, and loud intense hostile furious emotion, with clean vocal delivery and no heavy panting:`;
   }
   if (/😱|😨|😰|🫨|👻|💀/.test(textLine)) {
-    return `Say ${langPrompt} with extreme shock, gasping horror, panicked terror, and trembling frightened breath:`;
+    return `Say ${langPrompt} with extreme shock and panicked terror, maintaining clear speech and controlled breath (no loud gasping or mic breath sounds):`;
   }
   if (/😍|🥰|😘|💖|❤️|💕|😻/.test(textLine)) {
     return `Say ${langPrompt} with deeply romantic, sweet, loving, gentle, affectionate, and charming honey-sweet melody:`;
@@ -108,7 +112,7 @@ export function getEmojiActingDirective(
     return `Say ${langPrompt} in a precise, metallic, futuristic robotic monotone cadence:`;
   }
   if (/🥳|🎉|🚀|💥|🔥|⚡/.test(textLine)) {
-    return `Say ${langPrompt} with explosive hype, wild celebration screams, festive energy, and party excitement:`;
+    return `Say ${langPrompt} with explosive hype, wild celebration screams, festive energy, and party excitement, with clean vocals:`;
   }
   if (/🤔|🧐|🤨|🕵️/.test(textLine)) {
     return `Say ${langPrompt} with thoughtful curiosity, investigative suspicion, and deep intriguing ponder:`;
@@ -120,7 +124,7 @@ export function getEmojiActingDirective(
     return `Say ${langPrompt} in a peaceful, respectful, humble, devout, serene, and blessed prayerful tone:`;
   }
   if (/🍌/.test(textLine)) {
-    return `Say ${langPrompt} in a deep, heavy, charismatic, signature MʀツBΛNΛNΛ creator voice with rich baritone clarity:`;
+    return `Say ${langPrompt} in a deep, heavy, charismatic, signature MʀツBΛNΛNΛ creator voice with rich baritone clarity and smooth silent breathing:`;
   }
   if (/🤢|🤮|🤧/.test(textLine)) {
     return `Say ${langPrompt} with sickening disgust, nausea, and groaning revulsion:`;
@@ -129,10 +133,10 @@ export function getEmojiActingDirective(
     return `Say ${langPrompt} while shivering in freezing cold with teeth chattering:`;
   }
   if (/🥵|🔥/.test(textLine)) {
-    return `Say ${langPrompt} panting heavily from scorching heat, out of breath and exhausted:`;
+    return `Say ${langPrompt} with heat-struck fatigue and weary tone, but clean voice without loud mic panting or breath noise:`;
   }
 
-  return `Say ${langPrompt} with crisp, crystal-clear studio pronunciation and lively natural expression:`;
+  return `Say ${langPrompt} with crisp, crystal-clear studio pronunciation, lively natural expression, and smooth breath control (no loud breath noises or gasps):`;
 }
 
 export function splitTextIntoTTSChunks(
@@ -198,22 +202,31 @@ export function splitTextIntoTTSChunks(
   return chunks;
 }
 
+export const EMBEDDED_GEMINI_KEYS = [
+  "AIzaSyBSjAW0LOGzp7cPj0qMiU0Zi70aK0xsZvM", // Key 1
+  "AIzaSyAR8RAi4YWaXHU9AT3oDBZIgU3yOP7se8U", // Key 2
+];
+
+let clientRotationIndex = 0;
+
+export function getClientAvailableKeys(userKey?: string): string[] {
+  const keys: string[] = [];
+  if (userKey) {
+    const userKeys = userKey.split(/[,\n]/).map((k) => k.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+    keys.push(...userKeys);
+  }
+  keys.push(...EMBEDDED_GEMINI_KEYS);
+  return Array.from(new Set(keys)).filter((k) => k.length > 10);
+}
+
 export async function generateSpeechDirectly(
   text: string,
   voiceName: string,
   language: "bengali" | "english" | "hindi",
-  apiKey: string,
+  apiKey?: string,
   customPrompt = ""
 ): Promise<string> {
-  const ai = new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        "User-Agent": "aistudio-build",
-      },
-    },
-  });
-
+  const availableKeys = getClientAvailableKeys(apiKey);
   const langKey = language === "english" || language === "hindi" ? language : "bengali";
   const chunks = splitTextIntoTTSChunks(text, langKey, voiceName);
 
@@ -237,7 +250,7 @@ export async function generateSpeechDirectly(
     chosenVoice = "Fenrir";
   }
 
-  // Generate audio for each chunk sequentially with intelligent multi-attempt retry
+  // Generate audio for each chunk sequentially with intelligent multi-key instant failover and retry
   const audioBuffers: Uint8Array[] = [];
   let lastErrorMsg = "";
   let allChunksSuccessful = true;
@@ -253,74 +266,88 @@ export async function generateSpeechDirectly(
     }
 
     let chunkGenerated = false;
-    const maxAttempts = 3;
+    const maxPasses = 3;
 
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        const currentPrompt =
-          attempt === 1
-            ? promptText
-            : `${chunk.directive || `Speak as a Bangladeshi gaming YouTuber in ${langKey}:`} ${chunk.text}`;
+    for (let pass = 1; pass <= maxPasses; pass++) {
+      for (let k = 0; k < availableKeys.length; k++) {
+        const keyIdx = (clientRotationIndex + k) % availableKeys.length;
+        const currentKey = availableKeys[keyIdx];
+        const ai = new GoogleGenAI({ apiKey: currentKey });
 
-        const response = await ai.models.generateContent({
-          model: "gemini-3.1-flash-tts-preview",
-          contents: [{ parts: [{ text: currentPrompt }] }],
-          config: {
-            responseModalities: [Modality.AUDIO],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: chosenVoice },
+        try {
+          const currentPrompt =
+            pass === 1
+              ? promptText
+              : `${chunk.directive || `Speak as a Bangladeshi gaming YouTuber in ${langKey}:`} ${chunk.text}`;
+
+          const response = await ai.models.generateContent({
+            model: "gemini-3.1-flash-tts-preview",
+            contents: [{ parts: [{ text: currentPrompt }] }],
+            config: {
+              responseModalities: [Modality.AUDIO],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: chosenVoice },
+                },
               },
             },
-          },
-        });
+          });
 
-        const candidate = response.candidates?.[0];
-        const audioPart = candidate?.content?.parts?.find((p: any) => p.inlineData && p.inlineData.data);
-        const audioBase64 = audioPart?.inlineData?.data || candidate?.content?.parts?.[0]?.inlineData?.data;
+          const candidate = response.candidates?.[0];
+          const audioPart = candidate?.content?.parts?.find((p: any) => p.inlineData && p.inlineData.data);
+          const audioBase64 = audioPart?.inlineData?.data || candidate?.content?.parts?.[0]?.inlineData?.data;
 
-        if (audioBase64) {
-          const binaryString = atob(audioBase64);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let j = 0; j < binaryString.length; j++) {
-            bytes[j] = binaryString.charCodeAt(j);
+          if (audioBase64) {
+            const binaryString = atob(audioBase64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let j = 0; j < binaryString.length; j++) {
+              bytes[j] = binaryString.charCodeAt(j);
+            }
+            audioBuffers.push(bytes);
+            chunkGenerated = true;
+            clientRotationIndex = (keyIdx + 1) % availableKeys.length;
+            break; // Chunk succeeded!
           }
-          audioBuffers.push(bytes);
-          chunkGenerated = true;
-          break; // Success!
-        }
-      } catch (chunkError: any) {
-        lastErrorMsg = chunkError?.message || String(chunkError);
-        console.warn(`Chunk ${i + 1}/${chunks.length} attempt ${attempt}/${maxAttempts} failed with voice ${chosenVoice}:`, lastErrorMsg);
+        } catch (chunkError: any) {
+          lastErrorMsg = chunkError?.message || String(chunkError);
+          console.warn(
+            `Client Chunk ${i + 1}/${chunks.length} (Key ${keyIdx + 1}/${availableKeys.length}, pass ${pass}) error:`,
+            lastErrorMsg.slice(0, 150)
+          );
 
-        if (lastErrorMsg.includes("API key not valid") || lastErrorMsg.includes("API_KEY_INVALID")) {
-          break;
-        }
-
-        if (attempt < maxAttempts) {
-          let waitMs = 2000;
-          const isRateLimit =
+          if (
             lastErrorMsg.includes("429") ||
             lastErrorMsg.includes("Quota exceeded") ||
-            lastErrorMsg.includes("RESOURCE_EXHAUSTED");
-
-          if (isRateLimit) {
-            const retryMatch =
-              lastErrorMsg.match(/retry in\s+([\d\.]+)s/i) ||
-              lastErrorMsg.match(/retryDelay["']?\s*:\s*["']?(\d+)s?/i);
-            if (retryMatch && retryMatch[1]) {
-              const parsedSeconds = parseFloat(retryMatch[1]);
-              if (parsedSeconds <= 8) {
-                waitMs = Math.ceil(parsedSeconds * 1000) + 600;
-              } else {
-                break;
-              }
-            } else {
-              waitMs = 3000;
-            }
+            lastErrorMsg.includes("RESOURCE_EXHAUSTED")
+          ) {
+            // Instant 0ms switch to next key!
+            continue;
           }
-          await new Promise((res) => setTimeout(res, waitMs));
+
+          if (lastErrorMsg.includes("API key not valid") || lastErrorMsg.includes("API_KEY_INVALID")) {
+            continue;
+          }
         }
+      }
+
+      if (chunkGenerated) {
+        break;
+      }
+
+      if (pass < maxPasses) {
+        let waitMs = 3000;
+        const retryMatch =
+          lastErrorMsg.match(/retry in\s+([\d\.]+)s/i) ||
+          lastErrorMsg.match(/retryDelay["']?\s*:\s*["']?(\d+)s?/i);
+        if (retryMatch && retryMatch[1]) {
+          const parsedSeconds = parseFloat(retryMatch[1]);
+          if (parsedSeconds <= 65) {
+            waitMs = Math.ceil(parsedSeconds * 1000) + 700;
+          } else {
+            break;
+          }
+        }
+        await new Promise((res) => setTimeout(res, waitMs));
       }
     }
 
