@@ -128,6 +128,9 @@ export default function App() {
         } else {
           const errData = await response.json().catch(() => ({}));
           serverErrorMessage = errData?.error || "Server AI voice generation error";
+          if (errData?.retryAfter) {
+            setQuotaCountdown(errData.retryAfter);
+          }
         }
       } catch (serverErr: any) {
         console.warn("Server TTS not responding, trying browser/direct methods...", serverErr);
@@ -155,6 +158,7 @@ export default function App() {
       if (!audioBase64 && !customApiKey) {
         setIsApiKeyModalOpen(true);
         throw new Error(
+          serverErrorMessage ||
           "হুবহু মানুষের মতো রিয়ালিস্টিক আল্ট্রা-স্টুডিও ভয়েস পাওয়ার জন্য একটি ফ্রি Gemini API Key প্রয়োজন। অনুগ্রহ করে 'Vercel / API Key' বাটনে ক্লিক করে Key দিন।"
         );
       }
@@ -203,16 +207,16 @@ export default function App() {
         setErrorMessage(
           "আপনার দেওয়া API Key টি সঠিক নয় বা মেয়াদোত্তীর্ণ। অনুগ্রহ করে নিচের 'AI Studio' লিংক থেকে ১ ক্লিকে একটি নতুন ফ্রি Gemini Key তৈরি করে দিন।"
         );
-      } else if (msg.includes("429") || msg.includes("Quota") || msg.includes("limit") || msg.includes("RESOURCE_EXHAUSTED")) {
+      } else if (msg.includes("429") || msg.includes("Quota") || msg.includes("limit") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("কোটা সীমা")) {
         // Extract retry seconds if available
-        let retrySeconds = 50;
+        let retrySeconds = 40;
         const retryMatch = msg.match(/(\d+)\s*সেকেন্ড/i) || msg.match(/retry in\s+([\d\.]+)s/i) || msg.match(/(\d+)s/i);
         if (retryMatch && retryMatch[1]) {
           retrySeconds = Math.max(10, Math.min(60, parseInt(retryMatch[1], 10)));
         }
-        setQuotaCountdown(retrySeconds);
+        setQuotaCountdown((prev) => (prev && prev > 0 ? prev : retrySeconds));
         setErrorMessage(
-          `গুগল এপিআই-এর প্রতি মিনিটের ফ্রি কোটা সীমা সাময়িকভাবে শেষ হয়েছে। নিচের টাইমার শেষ হলে (${retrySeconds}s) স্বয়ংক্রিয়ভাবে প্রস্তুত হবে, অথবা নতুন Gemini API Key যোগ করুন।`
+          `গুগল এপিআই-এর প্রতি মিনিটের ফ্রি কোটা সীমা সাময়িকভাবে শেষ হয়েছে। নিচের টাইমার শেষ হলে স্বয়ংক্রিয়ভাবে প্রস্তুত হবে, অথবা নতুন ফ্রি Gemini API Key যোগ করুন।`
         );
       } else {
         setErrorMessage(msg || "ভয়েস তৈরি করার সময় সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।");

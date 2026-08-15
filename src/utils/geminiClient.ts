@@ -153,6 +153,7 @@ export async function generateSpeechDirectly(
 
   const audioBuffers: Uint8Array[] = [];
   let lastErrorMsg = "";
+  let allChunksSuccessful = true;
 
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
@@ -164,7 +165,7 @@ export async function generateSpeechDirectly(
       promptText = `${chunk.directive} ${chunk.text}`;
     }
 
-    let generated = false;
+    let chunkGenerated = false;
 
     // Attempt 1: with expressive directive
     try {
@@ -192,31 +193,16 @@ export async function generateSpeechDirectly(
           bytes[j] = binaryString.charCodeAt(j);
         }
         audioBuffers.push(bytes);
-        generated = true;
+        chunkGenerated = true;
       }
     } catch (chunkError: any) {
       lastErrorMsg = chunkError?.message || String(chunkError);
-      if (
-        lastErrorMsg.includes("API key not valid") ||
-        lastErrorMsg.includes("API_KEY_INVALID") ||
-        lastErrorMsg.includes("400") ||
-        lastErrorMsg.includes("429") ||
-        lastErrorMsg.includes("Quota exceeded") ||
-        lastErrorMsg.includes("RESOURCE_EXHAUSTED")
-      ) {
-        break;
-      }
     }
 
-    // Attempt 2 (Fallback)
-    if (
-      !generated &&
-      !lastErrorMsg.includes("API key not valid") &&
-      !lastErrorMsg.includes("API_KEY_INVALID") &&
-      !lastErrorMsg.includes("429") &&
-      !lastErrorMsg.includes("RESOURCE_EXHAUSTED")
-    ) {
+    // Attempt 2: If attempt 1 failed, wait 1.5s and retry
+    if (!chunkGenerated && !lastErrorMsg.includes("API key not valid") && !lastErrorMsg.includes("API_KEY_INVALID")) {
       try {
+        await new Promise((res) => setTimeout(res, 1500));
         const fallbackPrompt = `Say in ${langKey}: ${chunk.text}`;
         const fallbackVoice = chosenVoice === "Kore" || chosenVoice === "Aoede" ? "Kore" : "Puck";
         const response = await ai.models.generateContent({
@@ -243,30 +229,27 @@ export async function generateSpeechDirectly(
             bytes[j] = binaryString.charCodeAt(j);
           }
           audioBuffers.push(bytes);
-          generated = true;
+          chunkGenerated = true;
         }
       } catch (fallbackErr: any) {
         lastErrorMsg = fallbackErr?.message || String(fallbackErr);
-        if (
-          lastErrorMsg.includes("API key not valid") ||
-          lastErrorMsg.includes("API_KEY_INVALID") ||
-          lastErrorMsg.includes("429") ||
-          lastErrorMsg.includes("RESOURCE_EXHAUSTED")
-        ) {
-          break;
-        }
       }
+    }
+
+    if (!chunkGenerated) {
+      allChunksSuccessful = false;
+      break;
     }
   }
 
-  if (audioBuffers.length === 0) {
+  if (!allChunksSuccessful || audioBuffers.length === 0 || audioBuffers.length < chunks.length) {
     if (lastErrorMsg.includes("429") || lastErrorMsg.includes("Quota exceeded") || lastErrorMsg.includes("RESOURCE_EXHAUSTED")) {
       throw new Error(
-        "গুগল এপিআই-এর প্রতি মিনিটের ফ্রি কোটা সীমা শেষ হয়েছে। অনুগ্রহ করে ২০-৩০ সেকেন্ড অপেক্ষা করে আবার চেষ্টা করুন।"
+        "গুগল এপিআই-এর প্রতি মিনিটের ফ্রি কোটা সীমা শেষ হয়েছে। অনুগ্রহ করে ৩০-৪০ সেকেন্ড অপেক্ষা করে আবার চেষ্টা করুন।"
       );
     }
     throw new Error(
-      `ভয়েস তৈরি করা সম্ভব হয়নি (${lastErrorMsg || "API Error"}). আপনার API Key চেক করুন।`
+      `ভয়েস সম্পূর্ণভাবে তৈরি করা সম্ভব হয়নি (${lastErrorMsg || "API Error"}). আপনার API Key চেক করুন।`
     );
   }
 

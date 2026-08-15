@@ -200,9 +200,10 @@ app.post("/api/tts", async (req, res) => {
       chosenVoice = "Fenrir";
     }
 
-    // Generate audio for each chunk sequentially with retry
+    // Generate audio for each chunk sequentially with intelligent retry
     const audioBuffers: Buffer[] = [];
     let lastErrorMsg = "";
+    let allChunksSuccessful = true;
 
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
@@ -214,7 +215,7 @@ app.post("/api/tts", async (req, res) => {
         promptText = `${chunk.directive} ${chunk.text}`;
       }
 
-      let generated = false;
+      let chunkGenerated = false;
 
       // Attempt 1: with expressive directive
       try {
@@ -238,32 +239,17 @@ app.post("/api/tts", async (req, res) => {
         if (audioBase64) {
           const chunkBuffer = Buffer.from(audioBase64, "base64");
           audioBuffers.push(chunkBuffer);
-          generated = true;
+          chunkGenerated = true;
         }
       } catch (chunkError: any) {
         lastErrorMsg = chunkError?.message || String(chunkError);
         console.warn(`Chunk ${i + 1}/${chunks.length} attempt 1 failed with voice ${chosenVoice}:`, lastErrorMsg);
-        if (
-          lastErrorMsg.includes("API key not valid") ||
-          lastErrorMsg.includes("API_KEY_INVALID") ||
-          lastErrorMsg.includes("400") ||
-          lastErrorMsg.includes("429") ||
-          lastErrorMsg.includes("Quota exceeded") ||
-          lastErrorMsg.includes("RESOURCE_EXHAUSTED")
-        ) {
-          break;
-        }
       }
 
-      // Attempt 2 (Fallback): simpler prompt if attempt 1 failed
-      if (
-        !generated &&
-        !lastErrorMsg.includes("API key not valid") &&
-        !lastErrorMsg.includes("API_KEY_INVALID") &&
-        !lastErrorMsg.includes("429") &&
-        !lastErrorMsg.includes("RESOURCE_EXHAUSTED")
-      ) {
+      // Attempt 2: If attempt 1 failed, wait 1.5s and retry with clean prompt
+      if (!chunkGenerated && !lastErrorMsg.includes("API key not valid") && !lastErrorMsg.includes("API_KEY_INVALID")) {
         try {
+          await new Promise((res) => setTimeout(res, 1500));
           const fallbackPrompt = `Say in ${langKey}: ${chunk.text}`;
           const fallbackVoice = chosenVoice === "Kore" || chosenVoice === "Aoede" ? "Kore" : "Puck";
           const response = await ai.models.generateContent({
@@ -286,24 +272,23 @@ app.post("/api/tts", async (req, res) => {
           if (audioBase64) {
             const chunkBuffer = Buffer.from(audioBase64, "base64");
             audioBuffers.push(chunkBuffer);
-            generated = true;
+            chunkGenerated = true;
           }
         } catch (fallbackErr: any) {
           lastErrorMsg = fallbackErr?.message || String(fallbackErr);
-          console.error(`Chunk ${i + 1}/${chunks.length} fallback failed:`, lastErrorMsg);
-          if (
-            lastErrorMsg.includes("API key not valid") ||
-            lastErrorMsg.includes("API_KEY_INVALID") ||
-            lastErrorMsg.includes("429") ||
-            lastErrorMsg.includes("RESOURCE_EXHAUSTED")
-          ) {
-            break;
-          }
+          console.error(`Chunk ${i + 1}/${chunks.length} attempt 2 failed:`, lastErrorMsg);
         }
+      }
+
+      // If this chunk failed completely, mark overall as not all successful and break
+      if (!chunkGenerated) {
+        allChunksSuccessful = false;
+        break;
       }
     }
 
-    if (audioBuffers.length === 0) {
+    // If not all chunks succeeded, do NOT send a truncated (e.g. 6s) audio!
+    if (!allChunksSuccessful || audioBuffers.length === 0 || audioBuffers.length < chunks.length) {
       if (lastErrorMsg.includes("API key not valid") || lastErrorMsg.includes("API_KEY_INVALID")) {
         return res.status(400).json({
           error: "API Key টি সঠিক নয় বা মেয়াদোত্তীর্ণ (API key not valid)। অনুগ্রহ করে aistudio.google.com/app/apikey থেকে নতুন একটি ফ্রি Gemini API Key তৈরি করে বসান।",
@@ -315,8 +300,7 @@ app.post("/api/tts", async (req, res) => {
         lastErrorMsg.includes("RESOURCE_EXHAUSTED") ||
         lastErrorMsg.includes("rate-limits")
       ) {
-        // Try extracting retry delay if available
-        let retrySeconds = 50;
+        let retrySeconds = 40;
         const retryMatch = lastErrorMsg.match(/retry in\s+([\d\.]+)s/i) || lastErrorMsg.match(/retryDelay["']?\s*:\s*["']?(\d+)s?/i);
         if (retryMatch && retryMatch[1]) {
           retrySeconds = Math.ceil(parseFloat(retryMatch[1]));
@@ -327,7 +311,7 @@ app.post("/api/tts", async (req, res) => {
         });
       }
       return res.status(500).json({
-        error: `ভয়েস তৈরি করা সম্ভব হয়নি (${lastErrorMsg || "API Error"}). অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।`,
+        error: `ভয়েস সম্পূর্ণভাবে তৈরি করা সম্ভব হয়নি (${lastErrorMsg || "API Error"}). অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।`,
       });
     }
 
