@@ -612,22 +612,13 @@ export function ScriptStudio({
             <button
               id="generate-tts-speech-btn"
               onClick={onGenerateAudio}
-              disabled={isLoadingAudio || !text.trim() || (quotaCountdown !== null && quotaCountdown > 0)}
-              className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-black text-sm md:text-base shadow-xl flex items-center justify-center gap-2.5 transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
-                quotaCountdown !== null && quotaCountdown > 0
-                  ? "bg-zinc-800 text-yellow-400 border border-yellow-500/30"
-                  : "bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 hover:brightness-110 active:scale-98 text-zinc-950 shadow-yellow-500/25"
-              }`}
+              disabled={isLoadingAudio || !text.trim()}
+              className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-black text-sm md:text-base shadow-xl flex items-center justify-center gap-2.5 transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 hover:brightness-110 active:scale-98 text-zinc-950 shadow-yellow-500/25"
             >
               {isLoadingAudio ? (
                 <>
                   <RefreshCw className="w-5 h-5 animate-spin text-zinc-950" />
                   <span>Processing & Generating Multi-Line Voice...</span>
-                </>
-              ) : quotaCountdown !== null && quotaCountdown > 0 ? (
-                <>
-                  <span className="animate-spin text-base">⏳</span>
-                  <span>প্রস্তুত হতে বাকি: {quotaCountdown}s</span>
                 </>
               ) : (
                 <>

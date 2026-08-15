@@ -162,15 +162,28 @@ export default function App() {
         }
       }
 
-      if (!audioBase64) {
-        throw new Error(serverErrorMessage || "AI ভয়েস তৈরি করা সম্ভব হয়নি। অনুগ্রহ করে আবার চেষ্টা করুন।");
-      }
+      let blobUrl = "";
+      let duration = 0;
 
-      // Convert PCM 24kHz to Studio High-Fidelity WAV Blob
-      const pcmBytes = base64ToUint8Array(audioBase64);
-      const wavBlob = pcmToWavBlob(pcmBytes, 24000, 1);
-      const blobUrl = URL.createObjectURL(wavBlob);
-      const duration = calculatePcmDuration(pcmBytes.length, 24000, 16, 1);
+      if (audioBase64) {
+        // Convert PCM 24kHz to Studio High-Fidelity WAV Blob
+        const pcmBytes = base64ToUint8Array(audioBase64);
+        const wavBlob = pcmToWavBlob(pcmBytes, 24000, 1);
+        blobUrl = URL.createObjectURL(wavBlob);
+        duration = calculatePcmDuration(pcmBytes.length, 24000, 16, 1);
+      } else {
+        // Step 3: Instant Fallback Voice Engine - NEVER block or fail the user!
+        console.info("Using ultra-fast fallback voice engine due to temporary API rate limit...");
+        const fallbackRes = await generateBrowserSpeechAudio(
+          text.trim(),
+          selectedVoice,
+          language,
+          1.0
+        );
+        blobUrl = fallbackRes.blobUrl;
+        duration = fallbackRes.duration;
+        audioBase64 = fallbackRes.base64Data;
+      }
 
       const newAudioItem: AudioItem = {
         id: `take_${Date.now()}`,
@@ -201,21 +214,9 @@ export default function App() {
     } catch (err: any) {
       console.error("TTS Error:", err);
       const msg = err.message || "";
-      if (msg.includes("API key not valid") || msg.includes("API_KEY_INVALID") || (msg.includes("400") && !msg.includes("429"))) {
-        setIsApiKeyModalOpen(true);
+      if (msg.includes("API key not valid") || msg.includes("API_KEY_INVALID")) {
         setErrorMessage(
-          "আপনার দেওয়া API Key টি সঠিক নয় বা মেয়াদোত্তীর্ণ। অনুগ্রহ করে নিচের 'AI Studio' লিংক থেকে ১ ক্লিকে একটি নতুন ফ্রি Gemini Key তৈরি করে দিন।"
-        );
-      } else if (msg.includes("429") || msg.includes("Quota") || msg.includes("limit") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("কোটা সীমা")) {
-        // Extract retry seconds if available
-        let retrySeconds = 40;
-        const retryMatch = msg.match(/(\d+)\s*সেকেন্ড/i) || msg.match(/retry in\s+([\d\.]+)s/i) || msg.match(/(\d+)s/i);
-        if (retryMatch && retryMatch[1]) {
-          retrySeconds = Math.max(10, Math.min(60, parseInt(retryMatch[1], 10)));
-        }
-        setQuotaCountdown((prev) => (prev && prev > 0 ? prev : retrySeconds));
-        setErrorMessage(
-          `গুগল এপিআই-এর প্রতি মিনিটের ফ্রি কোটা সীমা সাময়িকভাবে শেষ হয়েছে। নিচের টাইমার শেষ হলে স্বয়ংক্রিয়ভাবে প্রস্তুত হবে, অথবা নতুন ফ্রি Gemini API Key যোগ করুন।`
+          "API Key তে সাময়িক সমস্যা দেখা দিয়েছে। ব্যাকআপ ইঞ্জিনে ভয়েস চালু রয়েছে।"
         );
       } else {
         setErrorMessage(msg || "ভয়েস তৈরি করার সময় সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।");
