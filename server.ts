@@ -96,39 +96,61 @@ function getEmojiActingDirective(textLine: string, language: "bengali" | "englis
 }
 
 /**
- * Split massive text (up to 20,000+ words/lines) into optimal TTS chunks
+ * Split massive text into optimal TTS chunks (up to 2000 chars per chunk to avoid hitting API rate limits)
  */
 function splitTextIntoTTSChunks(rawText: string, language: "bengali" | "english" | "hindi"): Array<{ text: string; directive: string }> {
-  // First split by explicit line breaks to preserve line-by-line emoji acting
+  // If the total text is within 2000 characters, send as a SINGLE chunk for instant, quota-friendly generation!
+  if (rawText.trim().length <= 2000) {
+    return [{
+      text: rawText.trim(),
+      directive: getEmojiActingDirective(rawText, language),
+    }];
+  }
+
+  // First split by explicit line breaks/paragraphs
   const rawLines = rawText.split(/\r?\n+/).map((l) => l.trim()).filter((l) => l.length > 0);
   const chunks: Array<{ text: string; directive: string }> = [];
 
+  let currentBlock = "";
+
   for (const line of rawLines) {
-    const directive = getEmojiActingDirective(line, language);
-
-    // If a line is reasonably short (<= 350 chars), keep it as a unit
-    if (line.length <= 350) {
-      chunks.push({ text: line, directive });
+    if ((currentBlock + "\n" + line).length <= 1800) {
+      currentBlock = currentBlock ? `${currentBlock}\n${line}` : line;
     } else {
-      // Split long line into sentences
-      const sentences = line.split(/(?<=[.?!।|])\s+/).filter((s) => s.trim().length > 0);
-      let currentSubChunk = "";
-
-      for (const sent of sentences) {
-        if ((currentSubChunk + " " + sent).length > 350 && currentSubChunk.length > 0) {
-          chunks.push({ text: currentSubChunk.trim(), directive });
-          currentSubChunk = sent;
-        } else {
-          currentSubChunk = currentSubChunk ? `${currentSubChunk} ${sent}` : sent;
-        }
+      if (currentBlock) {
+        chunks.push({
+          text: currentBlock.trim(),
+          directive: getEmojiActingDirective(currentBlock, language),
+        });
       }
-      if (currentSubChunk.trim().length > 0) {
-        chunks.push({ text: currentSubChunk.trim(), directive });
+      if (line.length <= 1800) {
+        currentBlock = line;
+      } else {
+        // Break super long line into sentences
+        const sentences = line.split(/(?<=[.?!।|])\s+/).filter((s) => s.trim().length > 0);
+        currentBlock = "";
+        for (const sent of sentences) {
+          if ((currentBlock + " " + sent).length > 1800 && currentBlock.length > 0) {
+            chunks.push({
+              text: currentBlock.trim(),
+              directive: getEmojiActingDirective(currentBlock, language),
+            });
+            currentBlock = sent;
+          } else {
+            currentBlock = currentBlock ? `${currentBlock} ${sent}` : sent;
+          }
+        }
       }
     }
   }
 
-  // Fallback if no line breaks
+  if (currentBlock.trim().length > 0) {
+    chunks.push({
+      text: currentBlock.trim(),
+      directive: getEmojiActingDirective(currentBlock, language),
+    });
+  }
+
   if (chunks.length === 0 && rawText.trim().length > 0) {
     chunks.push({
       text: rawText.trim(),
@@ -221,10 +243,26 @@ app.post("/api/tts", async (req, res) => {
       } catch (chunkError: any) {
         lastErrorMsg = chunkError?.message || String(chunkError);
         console.warn(`Chunk ${i + 1}/${chunks.length} attempt 1 failed with voice ${chosenVoice}:`, lastErrorMsg);
+        if (
+          lastErrorMsg.includes("API key not valid") ||
+          lastErrorMsg.includes("API_KEY_INVALID") ||
+          lastErrorMsg.includes("400") ||
+          lastErrorMsg.includes("429") ||
+          lastErrorMsg.includes("Quota exceeded") ||
+          lastErrorMsg.includes("RESOURCE_EXHAUSTED")
+        ) {
+          break;
+        }
       }
 
       // Attempt 2 (Fallback): simpler prompt if attempt 1 failed
-      if (!generated) {
+      if (
+        !generated &&
+        !lastErrorMsg.includes("API key not valid") &&
+        !lastErrorMsg.includes("API_KEY_INVALID") &&
+        !lastErrorMsg.includes("429") &&
+        !lastErrorMsg.includes("RESOURCE_EXHAUSTED")
+      ) {
         try {
           const fallbackPrompt = `Say in ${langKey}: ${chunk.text}`;
           const fallbackVoice = chosenVoice === "Kore" || chosenVoice === "Aoede" ? "Kore" : "Puck";
@@ -253,6 +291,14 @@ app.post("/api/tts", async (req, res) => {
         } catch (fallbackErr: any) {
           lastErrorMsg = fallbackErr?.message || String(fallbackErr);
           console.error(`Chunk ${i + 1}/${chunks.length} fallback failed:`, lastErrorMsg);
+          if (
+            lastErrorMsg.includes("API key not valid") ||
+            lastErrorMsg.includes("API_KEY_INVALID") ||
+            lastErrorMsg.includes("429") ||
+            lastErrorMsg.includes("RESOURCE_EXHAUSTED")
+          ) {
+            break;
+          }
         }
       }
     }
@@ -263,8 +309,25 @@ app.post("/api/tts", async (req, res) => {
           error: "API Key টি সঠিক নয় বা মেয়াদোত্তীর্ণ (API key not valid)। অনুগ্রহ করে aistudio.google.com/app/apikey থেকে নতুন একটি ফ্রি Gemini API Key তৈরি করে বসান।",
         });
       }
+      if (
+        lastErrorMsg.includes("429") ||
+        lastErrorMsg.includes("Quota exceeded") ||
+        lastErrorMsg.includes("RESOURCE_EXHAUSTED") ||
+        lastErrorMsg.includes("rate-limits")
+      ) {
+        // Try extracting retry delay if available
+        let retrySeconds = 50;
+        const retryMatch = lastErrorMsg.match(/retry in\s+([\d\.]+)s/i) || lastErrorMsg.match(/retryDelay["']?\s*:\s*["']?(\d+)s?/i);
+        if (retryMatch && retryMatch[1]) {
+          retrySeconds = Math.ceil(parseFloat(retryMatch[1]));
+        }
+        return res.status(429).json({
+          error: `গুগল এপিআই-এর প্রতি মিনিটের ফ্রি সীমা (Rate Limit) সাময়িকভাবে শেষ হয়েছে। অনুগ্রহ করে ${retrySeconds} সেকেন্ড অপেক্ষা করুন অথবা নতুন API Key ব্যবহার করুন।`,
+          retryAfter: retrySeconds,
+        });
+      }
       return res.status(500).json({
-        error: `ভয়েস তৈরি করা সম্ভব হয়নি (${lastErrorMsg || "API Error"}). অনুগ্রহ করে নিশ্চিত করুন যে আপনার GEMINI_API_KEY সক্রিয় আছে।`,
+        error: `ভয়েস তৈরি করা সম্ভব হয়নি (${lastErrorMsg || "API Error"}). অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।`,
       });
     }
 

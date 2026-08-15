@@ -41,16 +41,35 @@ export default function App() {
   const [currentAudio, setCurrentAudio] = useState<AudioItem | null>(null);
   const [history, setHistory] = useState<AudioItem[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [quotaCountdown, setQuotaCountdown] = useState<number | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [customApiKey, setCustomApiKey] = useState<string>(() => {
     return localStorage.getItem("banana_gemini_api_key") || "";
   });
 
+  // Automatic countdown timer for Quota rate limit
+  useEffect(() => {
+    if (quotaCountdown === null || quotaCountdown <= 0) return;
+    const interval = setInterval(() => {
+      setQuotaCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(interval);
+          setErrorMessage(null);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [quotaCountdown]);
+
   const handleSaveApiKey = (newKey: string) => {
     setCustomApiKey(newKey);
     if (newKey) {
       localStorage.setItem("banana_gemini_api_key", newKey);
+      setQuotaCountdown(null);
+      setErrorMessage(null);
       setSuccessToast("API Key সংরক্ষিত হয়েছে! এখন ভয়েস তৈরি করুন।");
     } else {
       localStorage.removeItem("banana_gemini_api_key");
@@ -179,10 +198,21 @@ export default function App() {
     } catch (err: any) {
       console.error("TTS Error:", err);
       const msg = err.message || "";
-      if (msg.includes("API key not valid") || msg.includes("API_KEY_INVALID") || msg.includes("400")) {
+      if (msg.includes("API key not valid") || msg.includes("API_KEY_INVALID") || (msg.includes("400") && !msg.includes("429"))) {
         setIsApiKeyModalOpen(true);
         setErrorMessage(
           "আপনার দেওয়া API Key টি সঠিক নয় বা মেয়াদোত্তীর্ণ। অনুগ্রহ করে নিচের 'AI Studio' লিংক থেকে ১ ক্লিকে একটি নতুন ফ্রি Gemini Key তৈরি করে দিন।"
+        );
+      } else if (msg.includes("429") || msg.includes("Quota") || msg.includes("limit") || msg.includes("RESOURCE_EXHAUSTED")) {
+        // Extract retry seconds if available
+        let retrySeconds = 50;
+        const retryMatch = msg.match(/(\d+)\s*সেকেন্ড/i) || msg.match(/retry in\s+([\d\.]+)s/i) || msg.match(/(\d+)s/i);
+        if (retryMatch && retryMatch[1]) {
+          retrySeconds = Math.max(10, Math.min(60, parseInt(retryMatch[1], 10)));
+        }
+        setQuotaCountdown(retrySeconds);
+        setErrorMessage(
+          `গুগল এপিআই-এর প্রতি মিনিটের ফ্রি কোটা সীমা সাময়িকভাবে শেষ হয়েছে। নিচের টাইমার শেষ হলে (${retrySeconds}s) স্বয়ংক্রিয়ভাবে প্রস্তুত হবে, অথবা নতুন Gemini API Key যোগ করুন।`
         );
       } else {
         setErrorMessage(msg || "ভয়েস তৈরি করার সময় সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।");
@@ -267,15 +297,31 @@ export default function App() {
 
         {/* Notifications / Toast */}
         {errorMessage && (
-          <div className="p-4 rounded-xl bg-red-950/60 border border-red-500/40 text-red-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
-              <div>
-                <span className="font-semibold">Notice: </span>
-                <span>{errorMessage}</span>
+          <div className="p-4 rounded-xl bg-red-950/60 border border-red-500/40 text-red-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-start sm:items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5 sm:mt-0" />
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-red-100">API Status Notice:</span>
+                  {quotaCountdown !== null && quotaCountdown > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-yellow-400 text-zinc-950 font-bold text-[11px] flex items-center gap-1 animate-pulse">
+                      ⏳ প্রস্তুত হতে বাকি: {quotaCountdown}s
+                    </span>
+                  )}
+                </div>
+                <p className="text-zinc-300 leading-relaxed">{errorMessage}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+              {quotaCountdown !== null && quotaCountdown <= 0 && (
+                <button
+                  type="button"
+                  onClick={handleGenerateAudio}
+                  className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-lg font-bold text-xs cursor-pointer shadow-md"
+                >
+                  🔄 এখনই রিট্রাই করুন
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setIsApiKeyModalOpen(true)}

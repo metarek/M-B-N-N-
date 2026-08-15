@@ -280,32 +280,44 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
         </div>
 
         {/* Realistic Voice Notice & Key Guidance */}
-        <div className="bg-zinc-950/80 p-3.5 rounded-xl border border-yellow-500/30 text-[11px] text-zinc-300 space-y-2">
-          <div className="flex items-center gap-2 text-yellow-400 font-bold">
-            <Sparkles className="w-4 h-4 text-yellow-400" />
-            <span>১০০% রিয়ালিস্টিক আল্ট্রা-এইচডি স্টুডিও ভয়েস চালু করুন</span>
+        <div className="bg-zinc-950/80 p-3.5 rounded-xl border border-yellow-500/30 text-[11px] text-zinc-300 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-yellow-400 font-bold">
+              <Sparkles className="w-4 h-4 text-yellow-400" />
+              <span>১০০% কার্যকর Gemini API Key নেওয়ার সহজ নিয়ম</span>
+            </div>
+            <a
+              href="https://aistudio.google.com/app/apikey"
+              target="_blank"
+              rel="noreferrer"
+              className="px-2.5 py-1 bg-yellow-400 text-zinc-950 font-bold rounded-lg text-[10px] hover:bg-yellow-300 transition flex items-center gap-1 shrink-0"
+            >
+              <span>নতুন কী নিন</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
-          <p className="text-zinc-300 leading-relaxed">
-            হুবহু মানুষের মতো আবেগপূর্ণ ও স্পষ্ট ভয়েস তৈরি করতে আপনার নিজস্ব <strong>Google Gemini API Key</strong> প্রয়োজন। 
-            কী-টি দেখতে সবসময় <code className="text-yellow-300 bg-zinc-800 px-1.5 py-0.5 rounded font-mono">AIzaSy...</code> দিয়ে শুরু হয়।
+          <p className="text-zinc-300 leading-relaxed text-[11px]">
+            গুগল ক্লাউড কনসোলের কী-তে প্রায়শই রেস্ট্রিকশন থাকে। তাই <strong>Google AI Studio</strong> থেকে সরাসরি কী তৈরি করুন—এটি ১ ক্লিকেই চালু হয়ে যায়।
           </p>
 
-          <div className="bg-zinc-900/90 p-2.5 rounded-lg border border-zinc-800 text-[10px] space-y-1.5">
-            <div className="text-zinc-200 font-semibold">🔍 আসল AIzaSy কী বের করার নিয়ম:</div>
-            <ol className="list-decimal list-inside space-y-1 text-zinc-400">
+          <div className="bg-zinc-900/90 p-2.5 rounded-lg border border-zinc-800 text-[11px] space-y-1.5">
+            <div className="text-yellow-300 font-semibold flex items-center gap-1">
+              <span>📌 মাত্র ৩ ধাপে নতুন Key নিন:</span>
+            </div>
+            <ol className="list-decimal list-inside space-y-1 text-zinc-300">
               <li>
                 <a
-                  href="https://console.cloud.google.com/apis/credentials"
+                  href="https://aistudio.google.com/app/apikey"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-yellow-400 hover:underline font-semibold"
+                  className="text-yellow-400 underline font-semibold"
                 >
-                  console.cloud.google.com/apis/credentials
+                  aistudio.google.com/app/apikey
                 </a>{" "}
-                এ যান।
+                লিঙ্কে যান।
               </li>
-              <li>সেখানে <strong>API Keys</strong> সেকশনের নিচে আপনার Key এর পাশে থাকা <strong>"SHOW KEY"</strong> বা চোখের আইকনে চাপ দিন।</li>
-              <li>সামনে আসা <code className="text-yellow-300 font-mono">AIzaSy...</code> লেখা কোডটি কপি করে এখানে পেস্ট করুন।</li>
+              <li>সেখানে <strong>"Create API key"</strong> বাটনে ক্লিক করুন।</li>
+              <li>পাওয়া <code className="text-yellow-300 font-mono bg-zinc-800 px-1 py-0.5 rounded">AIzaSy...</code> কোডটি কপি করে উপরে পেস্ট করে <strong>"সংরক্ষণ করুন"</strong> দিন।</li>
             </ol>
           </div>
 

@@ -64,30 +64,52 @@ export function splitTextIntoTTSChunks(
   rawText: string,
   language: "bengali" | "english" | "hindi"
 ): Array<{ text: string; directive: string }> {
+  if (rawText.trim().length <= 2000) {
+    return [{
+      text: rawText.trim(),
+      directive: getEmojiActingDirective(rawText, language),
+    }];
+  }
+
   const rawLines = rawText.split(/\r?\n+/).map((l) => l.trim()).filter((l) => l.length > 0);
   const chunks: Array<{ text: string; directive: string }> = [];
+  let currentBlock = "";
 
   for (const line of rawLines) {
-    const directive = getEmojiActingDirective(line, language);
-
-    if (line.length <= 350) {
-      chunks.push({ text: line, directive });
+    if ((currentBlock + "\n" + line).length <= 1800) {
+      currentBlock = currentBlock ? `${currentBlock}\n${line}` : line;
     } else {
-      const sentences = line.split(/(?<=[.?!।|])\s+/).filter((s) => s.trim().length > 0);
-      let currentSubChunk = "";
-
-      for (const sent of sentences) {
-        if ((currentSubChunk + " " + sent).length > 350 && currentSubChunk.length > 0) {
-          chunks.push({ text: currentSubChunk.trim(), directive });
-          currentSubChunk = sent;
-        } else {
-          currentSubChunk = currentSubChunk ? `${currentSubChunk} ${sent}` : sent;
+      if (currentBlock) {
+        chunks.push({
+          text: currentBlock.trim(),
+          directive: getEmojiActingDirective(currentBlock, language),
+        });
+      }
+      if (line.length <= 1800) {
+        currentBlock = line;
+      } else {
+        const sentences = line.split(/(?<=[.?!।|])\s+/).filter((s) => s.trim().length > 0);
+        currentBlock = "";
+        for (const sent of sentences) {
+          if ((currentBlock + " " + sent).length > 1800 && currentBlock.length > 0) {
+            chunks.push({
+              text: currentBlock.trim(),
+              directive: getEmojiActingDirective(currentBlock, language),
+            });
+            currentBlock = sent;
+          } else {
+            currentBlock = currentBlock ? `${currentBlock} ${sent}` : sent;
+          }
         }
       }
-      if (currentSubChunk.trim().length > 0) {
-        chunks.push({ text: currentSubChunk.trim(), directive });
-      }
     }
+  }
+
+  if (currentBlock.trim().length > 0) {
+    chunks.push({
+      text: currentBlock.trim(),
+      directive: getEmojiActingDirective(currentBlock, language),
+    });
   }
 
   if (chunks.length === 0 && rawText.trim().length > 0) {
@@ -174,10 +196,26 @@ export async function generateSpeechDirectly(
       }
     } catch (chunkError: any) {
       lastErrorMsg = chunkError?.message || String(chunkError);
+      if (
+        lastErrorMsg.includes("API key not valid") ||
+        lastErrorMsg.includes("API_KEY_INVALID") ||
+        lastErrorMsg.includes("400") ||
+        lastErrorMsg.includes("429") ||
+        lastErrorMsg.includes("Quota exceeded") ||
+        lastErrorMsg.includes("RESOURCE_EXHAUSTED")
+      ) {
+        break;
+      }
     }
 
     // Attempt 2 (Fallback)
-    if (!generated) {
+    if (
+      !generated &&
+      !lastErrorMsg.includes("API key not valid") &&
+      !lastErrorMsg.includes("API_KEY_INVALID") &&
+      !lastErrorMsg.includes("429") &&
+      !lastErrorMsg.includes("RESOURCE_EXHAUSTED")
+    ) {
       try {
         const fallbackPrompt = `Say in ${langKey}: ${chunk.text}`;
         const fallbackVoice = chosenVoice === "Kore" || chosenVoice === "Aoede" ? "Kore" : "Puck";
@@ -209,11 +247,24 @@ export async function generateSpeechDirectly(
         }
       } catch (fallbackErr: any) {
         lastErrorMsg = fallbackErr?.message || String(fallbackErr);
+        if (
+          lastErrorMsg.includes("API key not valid") ||
+          lastErrorMsg.includes("API_KEY_INVALID") ||
+          lastErrorMsg.includes("429") ||
+          lastErrorMsg.includes("RESOURCE_EXHAUSTED")
+        ) {
+          break;
+        }
       }
     }
   }
 
   if (audioBuffers.length === 0) {
+    if (lastErrorMsg.includes("429") || lastErrorMsg.includes("Quota exceeded") || lastErrorMsg.includes("RESOURCE_EXHAUSTED")) {
+      throw new Error(
+        "গুগল এপিআই-এর প্রতি মিনিটের ফ্রি কোটা সীমা শেষ হয়েছে। অনুগ্রহ করে ২০-৩০ সেকেন্ড অপেক্ষা করে আবার চেষ্টা করুন।"
+      );
+    }
     throw new Error(
       `ভয়েস তৈরি করা সম্ভব হয়নি (${lastErrorMsg || "API Error"}). আপনার API Key চেক করুন।`
     );
