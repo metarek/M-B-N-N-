@@ -29,6 +29,8 @@ interface ScriptStudioProps {
   setLanguage: (val: SupportedLanguage) => void;
   onGenerateAudio: () => void;
   isLoadingAudio: boolean;
+  quotaCountdown?: number | null;
+  onOpenApiKeyModal?: () => void;
 }
 
 export function ScriptStudio({
@@ -40,6 +42,8 @@ export function ScriptStudio({
   setLanguage,
   onGenerateAudio,
   isLoadingAudio,
+  quotaCountdown = null,
+  onOpenApiKeyModal,
 }: ScriptStudioProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [isEnhancing, setIsEnhancing] = useState(false);
@@ -64,7 +68,7 @@ export function ScriptStudio({
     } else if (gender === "male") {
       const current = VOICES.find((v) => v.id === selectedVoice);
       if (!current || current.gender !== "Male") {
-        setSelectedVoice("Puck");
+        setSelectedVoice("Mr.banana");
       }
     }
   };
@@ -480,6 +484,7 @@ export function ScriptStudio({
           {filteredVoices.map((voice) => {
             const isSelected = selectedVoice === voice.id;
             const isFemale = voice.gender === "Female";
+            const isViral = voice.isViral;
             return (
               <button
                 key={voice.id}
@@ -487,9 +492,13 @@ export function ScriptStudio({
                 onClick={() => setSelectedVoice(voice.id)}
                 className={`relative p-4 rounded-xl text-left transition flex flex-col justify-between border cursor-pointer ${
                   isSelected
-                    ? isFemale
+                    ? isViral
+                      ? "bg-gradient-to-b from-yellow-950/40 to-zinc-900 border-yellow-400 shadow-xl shadow-yellow-500/20 ring-2 ring-yellow-400"
+                      : isFemale
                       ? "bg-zinc-850 border-pink-400 shadow-lg shadow-pink-950/40 ring-2 ring-pink-400"
                       : "bg-zinc-850 border-yellow-400 shadow-lg shadow-yellow-950/40 ring-2 ring-yellow-400"
+                    : isViral
+                    ? "bg-gradient-to-b from-yellow-950/20 to-zinc-950/80 border-yellow-500/40 hover:border-yellow-400 hover:bg-zinc-900"
                     : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900"
                 }`}
               >
@@ -497,34 +506,67 @@ export function ScriptStudio({
                   <div className="flex items-center justify-between mb-2.5">
                     <div className="flex items-center gap-2.5">
                       <div
-                        className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${voice.color} flex items-center justify-center text-white text-sm font-bold shadow-sm`}
+                        className={`w-9 h-9 rounded-xl bg-gradient-to-tr ${voice.color} flex items-center justify-center text-white text-base font-bold shadow-md`}
                       >
-                        {voice.id === "Puck" ? "🍌" : isFemale ? "👩" : "👨"}
+                        {voice.id?.includes("gaming")
+                          ? "🎮"
+                          : voice.id === "Mr.banana" || voice.id === "Puck"
+                          ? "🍌"
+                          : isFemale
+                          ? "👩"
+                          : "👨"}
                       </div>
                       <div>
-                        <div className="text-sm font-bold text-white leading-tight">
-                          {voice.name.split(" (")[0]}
+                        <div className="text-sm font-bold text-white leading-tight flex items-center gap-1.5">
+                          <span>{voice.name.split(" (")[0]}</span>
+                          {voice.id?.includes("gaming") ? (
+                            <span className="text-[9px] bg-gradient-to-r from-red-500 to-amber-500 text-white font-black px-1.5 py-0.2 rounded-full shadow-sm animate-pulse">
+                              FF GAMING
+                            </span>
+                          ) : isViral ? (
+                            <span className="text-[10px] bg-red-500 text-white font-black px-1.5 py-0.2 rounded-full animate-pulse">
+                              VIRAL
+                            </span>
+                          ) : null}
                         </div>
                         <div className="flex items-center gap-1 mt-0.5">
-                          <span
-                            className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
-                              isFemale
-                                ? "bg-pink-500/20 text-pink-300 border border-pink-500/30"
-                                : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                            }`}
-                          >
-                            {isFemale ? "👩 মেয়ে / Female" : "👨 ছেলে / Male"}
-                          </span>
+                          {voice.tag ? (
+                            <span
+                              className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
+                                isViral
+                                  ? "bg-yellow-400/20 text-yellow-300 border border-yellow-400/40 font-bold"
+                                  : isFemale
+                                  ? "bg-pink-500/20 text-pink-300 border border-pink-500/30"
+                                  : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                              }`}
+                            >
+                              {voice.tag}
+                            </span>
+                          ) : (
+                            <span
+                              className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
+                                isFemale
+                                  ? "bg-pink-500/20 text-pink-300 border border-pink-500/30"
+                                  : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                              }`}
+                            >
+                              {isFemale ? "👩 মেয়ে / Female" : "👨 ছেলে / Male"}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
                     {isSelected && (
                       <span
-                        className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                          isFemale ? "bg-pink-400 text-zinc-950" : "bg-yellow-400 text-zinc-950"
+                        className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                          isViral
+                            ? "bg-yellow-400 text-zinc-950 font-black shadow-md"
+                            : isFemale
+                            ? "bg-pink-400 text-zinc-950"
+                            : "bg-yellow-400 text-zinc-950"
                         }`}
                       >
-                        <Check className="w-2.5 h-2.5 font-bold" />
+                        <Check className="w-3 h-3 font-bold" />
                       </span>
                     )}
                   </div>
@@ -542,37 +584,59 @@ export function ScriptStudio({
 
         {/* Generate Voice Action Button */}
         <div className="pt-4 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-zinc-400 flex items-center gap-2">
-            <Volume2 className="w-4 h-4 text-emerald-400" />
-            <span>
-              নির্বাচিত:{" "}
-              <strong className="text-white">
-                {selectedVoice} (
-                {VOICES.find((v) => v.id === selectedVoice)?.gender === "Female" ? "মেয়ে / Female" : "ছেলে / Male"}
-                )
-              </strong>{" "}
-              • ভাষা: <strong className="text-yellow-400 uppercase">{language}</strong> • Ultra-Clear TTS
-            </span>
+          <div className="text-xs text-zinc-400 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-1.5">
+              <Volume2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                নির্বাচিত:{" "}
+                <strong className="text-white">
+                  {selectedVoice} (
+                  {VOICES.find((v) => v.id === selectedVoice)?.gender === "Female" ? "মেয়ে / Female" : "ছেলে / Male"}
+                  )
+                </strong>{" "}
+                • ভাষা: <strong className="text-yellow-400 uppercase">{language}</strong>
+              </span>
+            </div>
+            {quotaCountdown !== null && quotaCountdown > 0 && onOpenApiKeyModal && (
+              <button
+                type="button"
+                onClick={onOpenApiKeyModal}
+                className="text-[11px] text-amber-400 hover:text-yellow-300 underline font-medium cursor-pointer"
+              >
+                (অথবা নিজের ফ্রি Key দিয়ে অপেক্ষা ছাড়াই ভয়েস তৈরি করুন)
+              </button>
+            )}
           </div>
 
-          <button
-            id="generate-tts-speech-btn"
-            onClick={onGenerateAudio}
-            disabled={isLoadingAudio || !text.trim()}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 hover:brightness-110 active:scale-98 text-zinc-950 font-black text-sm md:text-base shadow-xl shadow-yellow-500/25 flex items-center justify-center gap-2.5 transition cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
-          >
-            {isLoadingAudio ? (
-              <>
-                <RefreshCw className="w-5 h-5 animate-spin text-zinc-950" />
-                <span>Processing & Generating Multi-Line Voice...</span>
-              </>
-            ) : (
-              <>
-                <span className="text-xl">🍌</span>
-                <span>Generate Voice (ভয়েস তৈরি করুন)</span>
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            <button
+              id="generate-tts-speech-btn"
+              onClick={onGenerateAudio}
+              disabled={isLoadingAudio || !text.trim() || (quotaCountdown !== null && quotaCountdown > 0)}
+              className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-black text-sm md:text-base shadow-xl flex items-center justify-center gap-2.5 transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+                quotaCountdown !== null && quotaCountdown > 0
+                  ? "bg-zinc-800 text-yellow-400 border border-yellow-500/30"
+                  : "bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 hover:brightness-110 active:scale-98 text-zinc-950 shadow-yellow-500/25"
+              }`}
+            >
+              {isLoadingAudio ? (
+                <>
+                  <RefreshCw className="w-5 h-5 animate-spin text-zinc-950" />
+                  <span>Processing & Generating Multi-Line Voice...</span>
+                </>
+              ) : quotaCountdown !== null && quotaCountdown > 0 ? (
+                <>
+                  <span className="animate-spin text-base">⏳</span>
+                  <span>প্রস্তুত হতে বাকি: {quotaCountdown}s</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-xl">🍌</span>
+                  <span>Generate Voice (ভয়েস তৈরি করুন)</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

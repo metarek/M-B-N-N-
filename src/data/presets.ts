@@ -112,105 +112,182 @@ export const EMOJI_ACTING_RULES: EmojiActingRule[] = [
 ];
 
 export const VOICES: VoiceOption[] = [
+  // --- FREE FIRE SPECIALIZED GAMING MODELS (মাস্টার গেমিং মডেল) ---
+  {
+    id: "Mr.banana.gaming",
+    name: "Mr.banana.gaming (🔥 High Energy FF Streamer)",
+    gender: "Male",
+    description: "আসল বাংলাদেশি ফ্রি ফায়ার ইউটিউবার স্টাইল — দ্রুত বাচনভঙ্গি, চিৎকারে ফেটে পড়া হেডশট, ক্লাচ ও বুইয়াহ হাইপ (Live Streamer & YouTuber Hype)",
+    bengaliVibe: "🔥 লাইভ ফ্রি ফায়ার স্ট্রিমার, ওয়ান ট্যাপ হেডশট ও পাগলাটে এনার্জি",
+    color: "from-red-500 via-orange-500 to-amber-500",
+    tag: "🔥 FF Hype Streamer",
+    isViral: true,
+  },
+  {
+    id: "Mr.banana.gaming.pro",
+    name: "Mr.banana.gaming.pro (⚡ Smart Pro Gamer & Roaster)",
+    gender: "Male",
+    description: "স্মার্ট, দ্রুত, ক্রিস্প ও ডাইনামিক ইউটিউব গেমিং রোস্টিং ও টিপস/ট্রিকস কমেণ্ট্রি ভয়েস",
+    bengaliVibe: "⚡ স্মার্ট প্রো গেমার, টিপস-ট্রিকস ও রোস্টিং কমেণ্ট্রি",
+    color: "from-amber-400 via-yellow-500 to-orange-600",
+    tag: "⚡ Pro Gamer Roaster",
+    isViral: true,
+  },
+
+  // --- VIRAL SIGNATURE DEEP & HEAVY MODEL (ডিপ ও ভারী পুরুষালি কণ্ঠ) ---
+  {
+    id: "Mr.banana",
+    name: "Mr.banana (Deep & Heavy Voice - ডিপ ও ভারী কণ্ঠ)",
+    gender: "Male",
+    description: "গভীর বেস, ভারী ও স্পষ্ট বুকফাটা পুরুষালি কণ্ঠ (Deep Baritone, Heavy Bass & Crystal Clear Diction)",
+    bengaliVibe: "ডিপ, ভারি, স্পষ্ট ও আকর্ষণীয় ভাইরাল ভয়েস",
+    color: "from-yellow-400 via-amber-400 to-orange-500",
+    tag: "🔥 ডিপ ও ভারী কণ্ঠ",
+    isViral: true,
+  },
+
+  // --- MALE VOICES (ছেলের কণ্ঠ) ---
+  {
+    id: "Fenrir",
+    name: "Fenrir (Ultra Deep Bass & Cinematic)",
+    gender: "Male",
+    description: "আল্ট্রা ডিপ বেস, গম্ভীর ভারী কণ্ঠ, ট্রেলার ও কমান্ডিং স্টাইল",
+    bengaliVibe: "অতিরিক্ত ভারী, গভীর ও ট্রেলার মুভি স্টাইল",
+    color: "from-purple-600 via-indigo-600 to-slate-800",
+    tag: "🎬 আল্ট্রা ডিপ বেস",
+  },
+  {
+    id: "Charon",
+    name: "Charon (Mature & Deep Thriller)",
+    gender: "Male",
+    description: "গম্ভীর, স্পষ্ট, থ্রিলার ও পরিণত পডকাস্ট ভয়েস",
+    bengaliVibe: "শান্ত, পরিণত ও গভীর থ্রিলার স্টাইল",
+    color: "from-zinc-600 to-stone-800",
+    tag: "🤫 গম্ভীর থ্রিলার",
+  },
+  {
+    id: "Zephyr",
+    name: "Zephyr (Crisp & Modern Male)",
+    gender: "Male",
+    description: "ক্লিয়ার, আধুনিক, ডাইনামিক রোস্টিং ও গেমিং ভয়েস",
+    bengaliVibe: "স্মার্ট, আধুনিক ও স্পষ্ট গেমিং/রোস্ট স্টাইল",
+    color: "from-cyan-500 to-blue-600",
+    tag: "🎮 স্পষ্ট ও ডাইনামিক",
+  },
+  {
+    id: "Puck",
+    name: "Puck (High Energy Creator)",
+    gender: "Male",
+    description: "উচ্ছ্বসিত, প্রাণবন্ত, দ্রুত ও কমেডি অ্যাক্টিং",
+    bengaliVibe: "উচ্ছ্বসিত, প্রাণবন্ত ও দ্রুত আবেগ প্রকাশে সেরা",
+    color: "from-amber-400 via-orange-500 to-red-500",
+    tag: "⚡ দ্রুত এনার্জি",
+  },
+
   // --- FEMALE VOICES (মেয়ের কণ্ঠ) ---
   {
     id: "Kore",
-    name: "Kore (Emotional & Sweet)",
+    name: "Kore (Sweet & Crystal Clear)",
     gender: "Female",
-    description: "Deeply emotional, clear, crystal-crisp diction and melodic warmth",
+    description: "মিষ্টি, আবেগময়, স্ফটিকের মতো পরিষ্কার উচ্চারণ ও নিখুঁত ফিমেল ভয়েস",
     bengaliVibe: "মিষ্টি, আবেগময় ও হৃদয়ছোঁয়া স্পষ্ট কণ্ঠ",
     color: "from-pink-500 via-rose-500 to-red-400",
+    tag: "👩 সুইট ফিমেল",
   },
   {
     id: "Aoede",
     name: "Aoede (Warm Storyteller)",
     gender: "Female",
-    description: "Warm, soothing, calm, expressive storytelling & podcast voice",
+    description: "গভীর, শান্ত, মধুর গল্পকার ও শিক্ষণীয় উপস্থাপনা",
     bengaliVibe: "শান্ত, মধুর গল্পকার ও শিক্ষণীয় উপস্থাপনা",
     color: "from-purple-500 via-fuchsia-500 to-pink-500",
-  },
-
-  // --- MALE VOICES (ছেলের কণ্ঠ) ---
-  {
-    id: "Puck",
-    name: "Puck (Mr Banana Signature)",
-    gender: "Male",
-    description: "High-energy, hyper-expressive, perfect for emoji acting & YouTube",
-    bengaliVibe: "উচ্ছ্বসিত, প্রাণবন্ত ও দ্রুত আবেগ প্রকাশে সেরা",
-    color: "from-yellow-400 via-amber-500 to-red-500",
-  },
-  {
-    id: "Zephyr",
-    name: "Zephyr (Smart & Modern)",
-    gender: "Male",
-    description: "Crisp, dynamic, punchy, suited for tech, gaming & commentary",
-    bengaliVibe: "স্মার্ট, আধুনিক ও স্পষ্ট গেমিং/রোস্ট স্টাইল",
-    color: "from-cyan-500 to-blue-600",
-  },
-  {
-    id: "Fenrir",
-    name: "Fenrir (Epic & Deep)",
-    gender: "Male",
-    description: "Heavy cinematic trailer voice, roaring anger and dramatic power",
-    bengaliVibe: "গম্ভীর, ড্রামাটিক ও ট্রেলার মুভি স্টাইল",
-    color: "from-purple-600 to-indigo-700",
-  },
-  {
-    id: "Charon",
-    name: "Charon (Calm & Mysterious)",
-    gender: "Male",
-    description: "Smooth, whispery, psychological thriller and chill podcast",
-    bengaliVibe: "শান্ত, থ্রিলার ও ফিসফিসানি স্টাইল",
-    color: "from-zinc-600 to-stone-800",
+    tag: "🎙️ স্টোরিটেলার",
   },
 ];
 
-export const SAMPLE_MULTI_EMOJI_BENGALI = `🥳 হ্যালো guys! আজকে আমি অনেক অনেক খুশি!
+export const SAMPLE_MULTI_EMOJI_BENGALI = `🍌 হ্যালো গাইস! আমি মিস্টার ব্যানানা!
+🥳 আজকে এমন একটা ঘটনা ঘটছে যা শুনলে আপনারা পুরো হা হয়ে যাবেন!
+😂 আরে ভাইরে ভাই, হাসতে হাসতে তো আমার পেটেই খিল ধরে গেছে, হাহাহা!
+😭 বিশ্বাস করো, শুরুতে আমার এতো ভয় লাগছিল যে বুকটা ধড়ফড় করছিল!
+😱 কিন্তু হঠাৎ দেখি পুরো দৃশ্যটাই পাল্টে গেছে!
+😎 তো বন্ধুরা, যারা যারা টিকটকে ভিডিও বানাতে চাও, এখনই চ্যানেল সাবস্ক্রাইব করে সঙ্গে থাকো!
+🍌 মিস্টার ব্যানানা সবসময় তোমাদের জন্য চরম এনার্জির ভাইরাল বিনোদন নিয়ে আসবে!`;
+
+export const SAMPLE_MULTI_EMOJI_ENGLISH = `🍌 What's up guys! Welcome to Mr.banana viral voice studio!
+🥳 Look at this insane energy, ElevenLabs Bunny style is now live on TikTok!
+😂 Bro, I literally cannot stop laughing right now, hahahaha!
+😱 Are you kidding me?! This is blowing up on TikTok and YouTube Shorts like crazy!
+😎 If you haven't smashed that subscribe and follow button yet, do it right now!
+🍌 Stay tuned with Mr.banana for the most hilarious meme content on the internet!`;
+
+export const SAMPLE_MULTI_EMOJI_HINDI = `🍌 अरे भाई सुनो! आ गया है Mr.banana वायरल टिकटक मॉडल!
+🥳 आज ऐसा मज़ाक हुआ कि पूरा इंटरनेट ही हिल गया!
+😂 हाहाहा! हँसते-हँसते भाई पेट में दर्द हो गया रे!
+😱 अरे बाप रे, ऐसा नज़ारा जिंदगी में कभी नहीं देखा था!
+😎 तो जिसने भी अभी तक फॉलो और सब्सक्राइब नहीं किया, जल्दी से ठोक दो!
+🍌 मिस्टर बनाना हमेशा आपके लिए वायरल मीम कॉमेडी लाता रहेगा!`;
+
+export const SCRIPT_PRESETS: ScriptPreset[] = [
+  {
+    id: "freefire_1vs4_clutch",
+    title: "🔥 Free Fire 1 vs 4 Epic Clutch (Mr.banana.gaming)",
+    bengaliTitle: "🔥 ফ্রি ফায়ার ১ বনাম ৪ অসম্ভব ক্লাচ",
+    language: "bengali",
+    text: `😱 WHAT?! পুরো স্কোয়াড রাশ দিচ্ছে ভাই!
+😡 একজন নক... গ্লু ওয়াল ফেল... আরেকজন নক!
+😱 একজন বাকি... HP একদম LOW... কিন্তু GAME এখনো শেষ হয়নি...
+🔥 একদম ONE TAP HEADSHOT! LET'S GO BOOYAH!
+😎 ওপি লেভেলের গেমপ্লে! ভিডিও ভালো লাগলে এখনই লাইক আর সাবস্ক্রাইব ঠোকো!`,
+    recommendedVoice: "Mr.banana.gaming",
+  },
+  {
+    id: "freefire_sensitivity_hook",
+    title: "⚡ Free Fire Secret Sensitivity & Headshot Trick (Shorts Hook)",
+    bengaliTitle: "⚡ সিক্রেট হেডশট ও সেনসিটিভিটি ট্রিক",
+    language: "bengali",
+    text: `🔥 এই সিক্রেট সেটিংটা ব্যবহার করলে তোমার HEADSHOT কিন্তু আগের চেয়ে অনেক বেশি লাগবে!
+😎 মাত্র ২ টা ড্র্যাগ করলেই এনিমি একদম ক্লিয়ার নক!
+😂 যারা ভাবছো নোব প্লেয়ার, তারা এটা ট্রাই করার পর পুরো প্রো প্লেয়ার হয়ে যাবা!
+🚀 এখনই চ্যানেল সাবস্ক্রাইব করে বেল আইকন অল করে দাও!`,
+    recommendedVoice: "Mr.banana.gaming",
+  },
+  {
+    id: "viral_deep_heavy_boss",
+    title: "🔥 Mr.banana Deep & Heavy Viral Boss Voice (ডিপ ও ভারী পুরুষালি কণ্ঠ)",
+    bengaliTitle: "🔥 Mr.banana ডিপ ও ভারী বস কণ্ঠ",
+    language: "bengali",
+    text: SAMPLE_MULTI_EMOJI_BENGALI,
+    recommendedVoice: "Mr.banana",
+  },
+  {
+    id: "bn_emoji_drama",
+    title: "Bengali 100 Subs Drama (ডিপ বেস ও ইমোজি অ্যাক্টিং)",
+    bengaliTitle: "বাংলা ১০০ সাবস ড্রামা (ডিপ কণ্ঠ)",
+    language: "bengali",
+    text: `🥳 হ্যালো guys! আজকে আমি অনেক অনেক খুশি!
 😭 কারণ তোমরা আমাকে এতোটা সাপোর্ট করবা আমি জীবনেও ভাবতে পারিনাই!
 😂 মাত্র ৭ দিনে আমাদের চ্যানেলে ১০০ টা subscriber complete হয়ে গেছে, হাহাহা!
 😱 বিশ্বাসই হচ্ছে না রে ভাই! কি মারাত্মক গতিতে চ্যানেল বড় হচ্ছে!
 😍 তোমাদের এই ভালোবাসা আমি কোনোদিনও ভুলবো না!
 😎 তো যারা এখনো subscribe করনাই, তাড়াতাড়ি subscribe করো!
-🍌 তোমরা পাশে থাকলে মিস্টার ব্যানানা অতি দ্রুত ১ হাজারের একটা family বানিয়ে ফেলবে, ইনশাআল্লাহ!`;
-
-export const SAMPLE_MULTI_EMOJI_ENGLISH = `🥳 Hello guys! Welcome to MʀツBΛNΛNΛ VOICE!
-😂 Look at this, we just hit 100 subscribers in only 7 days, hahahaha!
-😭 Honestly, I am so touched by your immense love and support!
-😱 Can you even believe how crazy fast we are growing?!
-😎 If you haven't subscribed yet, smash that subscribe button right now!
-🍌 Together with Mr Banana, we are building a 1,000 subscriber family very soon, InshaAllah!`;
-
-export const SAMPLE_MULTI_EMOJI_HINDI = `🥳 हेलो दोस्तों! आज मैं बहुत ही ज्यादा खुश हूँ!
-😂 अरे भाई देखो, सिर्फ 7 दिनों में हमारे 100 subscribers पूरे हो गए, हाहाहा!
-😭 सच कहूँ तो आप लोगों का इतना सारा प्यार देख कर मेरी आँखें भर आईं!
-😱 मुझे यकीन ही नहीं हो रहा कि हमारा चैनल इतनी तेजी से आगे बढ़ रहा है!
-😎 तो जिसने अभी तक सब्सक्राइब नहीं किया, जल्दी से सब्सक्राइब कर लो!
-🍌 आप सबका साथ रहा तो हम बहुत जल्द 1,000 की फैमिली बना लेंगे, इंशाअल्लाह!`;
-
-export const SCRIPT_PRESETS: ScriptPreset[] = [
-  {
-    id: "bn_emoji_drama",
-    title: "Bengali 100 Subs Drama (ইমোজি অ্যাক্টিং)",
-    bengaliTitle: "বাংলা ১০০ সাবস ইমোজি ড্রামা",
-    language: "bengali",
-    text: SAMPLE_MULTI_EMOJI_BENGALI,
-    recommendedVoice: "Puck",
+🍌 তোমরা পাশে থাকলে মিস্টার ব্যানানা অতি দ্রুত ১ হাজারের একটা family বানিয়ে ফেলবে, ইনশাআল্লাহ!`,
+    recommendedVoice: "Mr.banana",
   },
   {
     id: "en_emoji_creator",
-    title: "English Mr Banana Celebration",
-    bengaliTitle: "ইংরেজি মিস্টার ব্যানানা সেলিব্রেশন",
+    title: "English Mr.banana Deep Voice Celebration",
+    bengaliTitle: "ইংরেজি Mr.banana ডিপ ভয়েস",
     language: "english",
     text: SAMPLE_MULTI_EMOJI_ENGLISH,
-    recommendedVoice: "Puck",
+    recommendedVoice: "Mr.banana",
   },
   {
     id: "hi_emoji_celebration",
-    title: "Hindi 100 Subs Dhamaka",
-    bengaliTitle: "হিন্দি ১০০ সাবস্ক্রাইবার ধামাকা",
+    title: "Hindi 100 Subs Deep Dhamaka",
+    bengaliTitle: "হিন্দি Mr.banana ডিপ ধামাকা",
     language: "hindi",
     text: SAMPLE_MULTI_EMOJI_HINDI,
-    recommendedVoice: "Puck",
+    recommendedVoice: "Mr.banana",
   },
   {
     id: "bn_female_vlog_story",
@@ -234,6 +311,6 @@ export const SCRIPT_PRESETS: ScriptPreset[] = [
 😡 যারা বলছিল পারবিনা, তাদের মুখে একদম চুনকালি পড়ে গেছে!
 😍 আমার দর্শকদের জন্য অন্তরের গভীর থেকে অফুরন্ত ভালোবাসা!
 🥳 লেটস সেলিব্রেট গাইস! পার্টি শুরু!`,
-    recommendedVoice: "Puck",
+    recommendedVoice: "Mr.banana",
   },
 ];

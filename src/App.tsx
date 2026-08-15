@@ -34,7 +34,7 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState<"studio" | "badge" | "emojis" | "story">("studio");
   const [text, setText] = useState(SAMPLE_MULTI_EMOJI_BENGALI);
-  const [selectedVoice, setSelectedVoice] = useState("Puck");
+  const [selectedVoice, setSelectedVoice] = useState("Mr.banana.gaming");
   const [language, setLanguage] = useState<SupportedLanguage>("bengali");
 
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
@@ -425,6 +425,8 @@ export default function App() {
               setLanguage={setLanguage}
               onGenerateAudio={handleGenerateAudio}
               isLoadingAudio={isLoadingAudio}
+              quotaCountdown={quotaCountdown}
+              onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
             />
 
             {/* Previous Takes / History */}

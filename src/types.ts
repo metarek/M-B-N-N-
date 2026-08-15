@@ -17,6 +17,8 @@ export interface VoiceOption {
   description: string;
   bengaliVibe: string;
   color: string;
+  tag?: string;
+  isViral?: boolean;
 }
 
 export interface AudioItem {
