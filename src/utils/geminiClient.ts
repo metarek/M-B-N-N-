@@ -7,10 +7,30 @@ export function getEmojiActingDirective(
 ): string {
   const langPrompt =
     language === "bengali"
-      ? "in crystal clear Bengali (বাংলা)"
+      ? "Bengali (বাংলা)"
       : language === "hindi"
-      ? "in crystal clear Hindi (हिन्दी)"
-      : "in crystal clear English";
+      ? "Hindi (हिन्दी)"
+      : "English";
+
+  const isBananaProModel =
+    voiceName === "Mr.banana.pro" ||
+    voiceName?.toLowerCase()?.includes("banana.pro");
+
+  if (isBananaProModel) {
+    if (/পার্থক্য|কি\?|কেন\?|কেমন|জানো|স্নাইপার|রাশার|sniper|rush|\?/i.test(textLine)) {
+      return `Speak in an engaging, deep, charismatic YouTube explainer and curious narrator voice in ${langPrompt}:`;
+    }
+    if (/তো গাইজ|গাইজ|সাবস্ক্রাইব|লাইক|কমেন্ট|জানাও|subscribe|comment|share/i.test(textLine)) {
+      return `Speak in a warm, confident, engaging YouTuber call-to-action tone in ${langPrompt}:`;
+    }
+    if (/booyah|headshot|শট|পাওয়ার|বিজয়|heroic|master|গ্র্যান্ড|🔥|⚡|🚀|💥/i.test(textLine)) {
+      return `Speak in a deep, confident, epic gaming narrator voice in ${langPrompt}:`;
+    }
+    if (/😂|🤣|হাহাহা|haha|lol/i.test(textLine)) {
+      return `Speak in a deep, rich baritone chuckle and humorous storyteller tone in ${langPrompt}:`;
+    }
+    return `Speak in a smooth, deep, charismatic, confident Free Fire YouTube narrator voice with clear pronunciation in ${langPrompt}:`;
+  }
 
   const isGamingModel =
     voiceName === "Mr.banana.gaming" ||
@@ -19,40 +39,23 @@ export function getEmojiActingDirective(
     voiceName?.toLowerCase()?.includes("gaming") ||
     voiceName?.toLowerCase()?.includes("freefire");
 
-  // Strict breath-control directive for clean, professional studio audio without loud gasps or mic breath noise
-  const cleanBreathNotice = "Speak with controlled, smooth, silent breathing without any loud inhalation gasps, heavy panting, or audible microphone breath noises. Maintain clean, continuous and punchy vocal delivery.";
-
   if (isGamingModel) {
-    // Master System Prompt — Free Fire Bangladeshi YouTuber Gaming Voice Engine
-    const baseGamingRole = `You are a real, famous Bangladeshi Free Fire gaming YouTuber and livestreamer talking directly into your studio mic while playing Free Fire. Speak ${langPrompt} with high-octane gamer energy, fast talking speed, lively YouTuber cadence, youthful charisma, and real human emotion (absolutely no robotic tone, no newsreader tone, no slow boring narrator tone). ${cleanBreathNotice}`;
-
-    // 1. One-tap, Headshot, Booyah, Victory, Hype screaming
     if (/booyah|headshot|one tap|clutch|victory|জিত|উইনার|খতম|সব শেষ|kill|কিল|অসাধারণ|let's go|lets go|op|ওপি|🔥|⚡|🚀|💥|🥳|🎉/i.test(textLine)) {
-      return `${baseGamingRole} Shout with explosive gamer joy, fast adrenaline-pumping hype, and victory excitement for the insane one-tap headshot and Booyah, with crisp vocal articulation and zero loud gasping sounds:`;
+      return `Speak in energetic Bangladeshi gaming YouTuber victory hype in ${langPrompt}:`;
     }
-    // 2. Suspense, HP Low, 1 vs 4, Zone, Clutch tension, Heartbeat
     if (/hp|low|১ জন|একাকী|1vs4|1v4|1 vs 4|zone|সাসপেন্স|আস্তে|ধীরে|লুকিয়ে|ক্যাম্প|😱|😨|😰|🫨|🤫|🤐|\.{3,}/i.test(textLine)) {
-      return `${baseGamingRole} Speak with heart-pounding gaming suspense, tense gripping thrill, and dramatic quick pauses as enemy approaches, with clean quiet vocals and no audible breathing noises:`;
+      return `Speak in intense gaming suspense tone in ${langPrompt}:`;
     }
-    // 3. Rage, Knocked, Rush, Aggressive Fight, Squad clash
     if (/knock|নক|rush|রাশ|মেরে দিল|রিভাইভ|পালা|গুলিবৃষ্টি|এনিমি|enemy|gloo wall|গ্লু ওয়াল|দাঁড়া|দাঁড়াও|😡|🤬|👿|💢|😤/i.test(textLine)) {
-      return `${baseGamingRole} Speak with hyper-fast combat intensity, aggressive loud gamer battle cry, shouting fast squad orders with intense adrenaline, clean vocal tone and no loud panting:`;
+      return `Speak in aggressive fast-paced gaming battle cry in ${langPrompt}:`;
     }
-    // 4. Troll, Funny moments, Noob, Laughing, Roasting
     if (/noob|নুব|বট|bot|লল|lol|হাহা|মজা|troll|ফানি|😂|🤣|😹|😆|😃|😄|😁/.test(textLine)) {
-      return `${baseGamingRole} Burst into hilarious gamer laughter, playful teasing and teasing chuckles, delivering comedic YouTube trolling commentary cleanly:`;
+      return `Speak with playful YouTuber laughter and teasing comedy in ${langPrompt}:`;
     }
-    // 5. Emotional, Sadness, Lost match, Heartbreak, Minus rank
     if (/হারলাম|মায়েন্স|minus|rank down|দুঃখ|কষ্ট|স্যারি|😭|😢|😿|🥺|💔/.test(textLine)) {
-      return `${baseGamingRole} Deliver with genuine sorrowful gamer tone, emotional trembling voice, sincere sadness after losing rank, without heavy gasping:`;
+      return `Speak with sad emotional gamer tone in ${langPrompt}:`;
     }
-    // 6. Settings, Sensitivity, DPI, Tips & Tricks, Hook, Subscribe
-    if (/setting|সেটিংস|sensitivity|সেনসিটিভিটি|dpi|টিপস|tips|ট্রিকস|গোপন|secret|সাবস্ক্রাইব|subscribe|লাইক|like|ভিডিও|video/i.test(textLine)) {
-      return `${baseGamingRole} Deliver with a snappy, viral YouTube Shorts hook, fast engaging confidence, charismatic YouTuber intro and punchy subscriber call to action:`;
-    }
-
-    // Default Gaming Master Streamer Tone (Puck / Gaming models)
-    return `${baseGamingRole} Deliver with fast-paced, entertaining, lively Bangladeshi gaming streamer hype, natural gamer cadence, smooth silent breath control, and loud punchy emphasis on gaming words:`;
+    return `Speak as a lively, energetic Bangladeshi gaming YouTuber in ${langPrompt}:`;
   }
 
   const isDeepBananaModel =
@@ -64,79 +67,37 @@ export function getEmojiActingDirective(
 
   if (isDeepBananaModel) {
     if (/😭|😢|😿|🥺|💔/.test(textLine)) {
-      return `Say ${langPrompt} in a deep, heavy, emotional baritone voice with sincere sorrow, deep-toned sorrowful trembling and crystal clear diction (no loud sniffing or mic breath noise):`;
+      return `Speak in deep, sorrowful emotional baritone in ${langPrompt}:`;
     }
     if (/😂|🤣|😹|😆|😃|😄|😁/.test(textLine)) {
-      return `Say ${langPrompt} in a deep, rich, masculine baritone bursting into hearty booming laughter, natural chuckles and joyful resonance:`;
+      return `Speak in deep booming masculine laughter in ${langPrompt}:`;
     }
     if (/😡|🤬|👿|💢|😤/.test(textLine)) {
-      return `Say ${langPrompt} in a thunderous, deep, heavy masculine baritone with commanding fury, aggressive weight and powerful authority (clean vocal projection, no panting):`;
-    }
-    if (/😱|😨|😰|🫨|👻|💀/.test(textLine)) {
-      return `Say ${langPrompt} in a deep, heavy, dramatic tone with intense shock, striking suspense, and clean silent breath control:`;
+      return `Speak in commanding, deep angry baritone in ${langPrompt}:`;
     }
     if (/😍|🥰|😘|💖|❤️|💕|😻/.test(textLine)) {
-      return `Say ${langPrompt} in a warm, rich, deep baritone voice with gentle affection, smooth melody and charismatic charm:`;
+      return `Speak in warm, deep romantic baritone in ${langPrompt}:`;
     }
-    if (/🥳|🎉|🚀|💥|🔥|⚡/.test(textLine)) {
-      return `Say ${langPrompt} in a commanding, energetic, deep booming celebration voice with heavy punchy excitement, vibrant hype and clean audio:`;
-    }
-    if (/😎|😏|🕶️|👑|💅/.test(textLine)) {
-      return `Say ${langPrompt} in an ultra-confident, deep, heavy boss voice with stylish swagger, masculine authority and charismatic weight:`;
-    }
-    return `Say ${langPrompt} in a signature deep, heavy, crystal-clear, commanding masculine voice with rich baritone bass, studio broadcast clarity, full acoustic depth, smooth silent breathing and powerful delivery (no high-pitch, no squeakiness, no loud breath noise):`;
+    return `Speak in signature deep, heavy, rich studio baritone voice in ${langPrompt}:`;
   }
 
   if (/😭|😢|😿|🥺|💔/.test(textLine)) {
-    return `Say ${langPrompt} with genuine weeping, tearful sobbing, trembling voice, and heartbreaking grief with clear diction and clean audio:`;
+    return `Speak in emotional, crying tone in ${langPrompt}:`;
   }
   if (/😂|🤣|😹|😆|😃|😄|😁/.test(textLine)) {
-    return `Say ${langPrompt} bursting into loud laughter, giggling uncontrollably, hearty chuckles, and clear joyful amusement:`;
+    return `Speak in hearty joyful laughter in ${langPrompt}:`;
   }
   if (/😡|🤬|👿|💢|😤/.test(textLine)) {
-    return `Say ${langPrompt} with fierce boiling anger, screaming rage, fiery aggression, and loud intense hostile furious emotion, with clean vocal delivery and no heavy panting:`;
-  }
-  if (/😱|😨|😰|🫨|👻|💀/.test(textLine)) {
-    return `Say ${langPrompt} with extreme shock and panicked terror, maintaining clear speech and controlled breath (no loud gasping or mic breath sounds):`;
+    return `Speak with fierce anger and shouting emotion in ${langPrompt}:`;
   }
   if (/😍|🥰|😘|💖|❤️|💕|😻/.test(textLine)) {
-    return `Say ${langPrompt} with deeply romantic, sweet, loving, gentle, affectionate, and charming honey-sweet melody:`;
-  }
-  if (/🥱|😴|💤|🛌/.test(textLine)) {
-    return `Say ${langPrompt} with a sleepy, yawning, lazy, exhausted, drowsy bedtime slow murmur:`;
-  }
-  if (/🤫|🤐|😶/.test(textLine)) {
-    return `Say ${langPrompt} in a quiet, confidential, secretive, thrilling mystery whisper:`;
-  }
-  if (/🤖|👾|🦾/.test(textLine)) {
-    return `Say ${langPrompt} in a precise, metallic, futuristic robotic monotone cadence:`;
-  }
-  if (/🥳|🎉|🚀|💥|🔥|⚡/.test(textLine)) {
-    return `Say ${langPrompt} with explosive hype, wild celebration screams, festive energy, and party excitement, with clean vocals:`;
-  }
-  if (/🤔|🧐|🤨|🕵️/.test(textLine)) {
-    return `Say ${langPrompt} with thoughtful curiosity, investigative suspicion, and deep intriguing ponder:`;
-  }
-  if (/😎|😏|🕶️|👑|💅/.test(textLine)) {
-    return `Say ${langPrompt} with swagger, stylish cool confidence, playful sarcasm, and boss attitude:`;
-  }
-  if (/😇|🙏|🤲|🕊️/.test(textLine)) {
-    return `Say ${langPrompt} in a peaceful, respectful, humble, devout, serene, and blessed prayerful tone:`;
+    return `Speak with sweet romantic affection in ${langPrompt}:`;
   }
   if (/🍌/.test(textLine)) {
-    return `Say ${langPrompt} in a deep, heavy, charismatic, signature MʀツBΛNΛNΛ creator voice with rich baritone clarity and smooth silent breathing:`;
-  }
-  if (/🤢|🤮|🤧/.test(textLine)) {
-    return `Say ${langPrompt} with sickening disgust, nausea, and groaning revulsion:`;
-  }
-  if (/🥶|❄️|🧊/.test(textLine)) {
-    return `Say ${langPrompt} while shivering in freezing cold with teeth chattering:`;
-  }
-  if (/🥵|🔥/.test(textLine)) {
-    return `Say ${langPrompt} with heat-struck fatigue and weary tone, but clean voice without loud mic panting or breath noise:`;
+    return `Speak in signature MʀツBΛNΛNΛ creator voice in ${langPrompt}:`;
   }
 
-  return `Say ${langPrompt} with crisp, crystal-clear studio pronunciation, lively natural expression, and smooth breath control (no loud breath noises or gasps):`;
+  return `Speak in natural, expressive, crystal clear ${langPrompt}:`;
 }
 
 export function splitTextIntoTTSChunks(
@@ -202,11 +163,6 @@ export function splitTextIntoTTSChunks(
   return chunks;
 }
 
-export const EMBEDDED_GEMINI_KEYS = [
-  "AIzaSyBSjAW0LOGzp7cPj0qMiU0Zi70aK0xsZvM", // Key 1
-  "AIzaSyAR8RAi4YWaXHU9AT3oDBZIgU3yOP7se8U", // Key 2
-];
-
 let clientRotationIndex = 0;
 
 export function getClientAvailableKeys(userKey?: string): string[] {
@@ -215,7 +171,6 @@ export function getClientAvailableKeys(userKey?: string): string[] {
     const userKeys = userKey.split(/[,\n]/).map((k) => k.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
     keys.push(...userKeys);
   }
-  keys.push(...EMBEDDED_GEMINI_KEYS);
   return Array.from(new Set(keys)).filter((k) => k.length > 10);
 }
 
@@ -231,9 +186,11 @@ export async function generateSpeechDirectly(
   const chunks = splitTextIntoTTSChunks(text, langKey, voiceName);
 
   const allowedVoices = ["Puck", "Zephyr", "Fenrir", "Charon", "Kore", "Aoede"];
-  let chosenVoice = "Puck";
+  let chosenVoice = "Fenrir";
   if (allowedVoices.includes(voiceName)) {
     chosenVoice = voiceName;
+  } else if (voiceName === "Mr.banana.pro" || voiceName?.toLowerCase()?.includes("banana.pro")) {
+    chosenVoice = "Fenrir"; // Deep, smooth, charismatic YouTube narrator voice (Exact match to video!)
   } else if (voiceName === "Mr.banana.gaming") {
     chosenVoice = "Puck"; // High-energy, fast, breathless shouting gaming YouTuber engine
   } else if (voiceName === "Mr.banana.gaming.pro") {

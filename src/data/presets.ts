@@ -112,6 +112,18 @@ export const EMOJI_ACTING_RULES: EmojiActingRule[] = [
 ];
 
 export const VOICES: VoiceOption[] = [
+  // --- VIRAL VIDEO CHARACTER MODEL (হুবহু ভিডিওর মিস্টার কলা প্রফেশনাল মডেল) ---
+  {
+    id: "Mr.banana.pro",
+    name: "Mr.banana.pro (🍌 স্নাইপার বনাম রাশ - Viral Explainer & Narrator)",
+    gender: "Male",
+    description: "হুবহু ভিডিওর মতো — গম্ভীর, মসৃণ, আকর্ষণীয় ইউটিউব গেমিং নেরেটর ও ব্যাখ্যাকারী কণ্ঠ (Deep, Smooth, Charismatic FF Comparison & Storytelling Voice)",
+    bengaliVibe: "🍌 এটা স্নাইপার, আর এটা ফাস্ট রাশার। পার্থক্য কি? (100% হুবহু ভিডিও নেরেটর)",
+    color: "from-amber-400 via-yellow-500 to-orange-500",
+    tag: "👑 হুবহু ভিডিও নেরেটর (PRO)",
+    isViral: true,
+  },
+
   // --- FREE FIRE SPECIALIZED GAMING MODELS (মাস্টার গেমিং মডেল) ---
   {
     id: "Mr.banana.gaming",
@@ -228,6 +240,17 @@ export const SAMPLE_MULTI_EMOJI_HINDI = `🍌 अरे भाई सुनो! 
 🍌 मिस्टर बनाना हमेशा आपके लिए वायरल मीम कॉमेडी लाता रहेगा!`;
 
 export const SCRIPT_PRESETS: ScriptPreset[] = [
+  {
+    id: "banana_pro_sniper_vs_rush",
+    title: "🍌 Mr.banana.pro — এটা স্নাইপার আর এটা ফাস্ট রাশার (Viral Video Voice)",
+    bengaliTitle: "🍌 এটা স্নাইপার আর এটা ফাস্ট রাশার (হুবহু ভিডিও ন্যারেশন)",
+    language: "bengali",
+    text: `এটা স্নাইপার, আর এটা ফাস্ট রাশার। পার্থক্য কি?
+স্নাইপার এমন একজন খেলোয়াড় যে দূর থেকে এনিমিকে টার্গেট করে। সে নিরাপদ পজিশন নেয়, সুযোগের অপেক্ষা করে, এবং দূর থেকেই নির্ভুল শট দিয়ে এনিমিকে দুর্বল বা নক করার চেষ্টা করে। তার সবচেয়ে বড় শক্তি এইম, ধৈর্য এবং সঠিক সময়ে শট নেওয়া।
+অন্যদিকে ফাস্ট রাশার এমন একজন খেলোয়াড় যে সবার আগে এনিমির দিকে এগিয়ে যায় এবং ফাইট শুরু করে। তার কাজ হলো এনিমির অবস্থান বের করা, প্রতিপক্ষের উপর প্রথম চাপ তৈরি করা এবং নিজের টিমের জন্য ফাইটের সুযোগ তৈরি করা। তাই তার জন্য দ্রুত মুভমেন্ট সাহস এবং দ্রুত সিদ্ধান্ত নেওয়া খুব গুরুত্বপূর্ণ।
+তো গাইজ, তুমি কোন রোলে খেলতে বেশি পছন্দ করো? স্নাইপার নাকি ফাস্ট রাশার? অবশ্যই কমেন্ট করে জানাও।`,
+    recommendedVoice: "Mr.banana.pro",
+  },
   {
     id: "freefire_1vs4_clutch",
     title: "🔥 Free Fire 1 vs 4 Epic Clutch (Mr.banana.gaming)",
