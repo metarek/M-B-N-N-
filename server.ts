@@ -338,16 +338,16 @@ app.post("/api/tts", async (req, res) => {
               lastErrorMsg.slice(0, 150)
             );
 
-            // If this key hit 429 quota or resource exhaustion, try next key immediately!
+            // If this key hit 429 quota or resource exhaustion or was revoked/leaked, try next key immediately!
             if (
               lastErrorMsg.includes("429") ||
               lastErrorMsg.includes("Quota exceeded") ||
-              lastErrorMsg.includes("RESOURCE_EXHAUSTED")
+              lastErrorMsg.includes("RESOURCE_EXHAUSTED") ||
+              lastErrorMsg.includes("leaked") ||
+              lastErrorMsg.includes("PERMISSION_DENIED") ||
+              lastErrorMsg.includes("API key not valid") ||
+              lastErrorMsg.includes("API_KEY_INVALID")
             ) {
-              continue;
-            }
-
-            if (lastErrorMsg.includes("API key not valid") || lastErrorMsg.includes("API_KEY_INVALID")) {
               continue;
             }
           }

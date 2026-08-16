@@ -47,14 +47,21 @@ export default function App() {
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [customApiKey, setCustomApiKey] = useState<string>(() => {
-    const saved = localStorage.getItem("banana_gemini_api_key");
-    if (saved && (saved.includes("AIzaSyBSj") || saved.includes("AIzaSyAR8"))) {
-      try {
-        localStorage.removeItem("banana_gemini_api_key");
-      } catch (_) {}
-      return "";
-    }
-    return saved || "";
+    try {
+      const saved = localStorage.getItem("banana_gemini_api_key");
+      if (saved) {
+        if (
+          saved.includes("AIzaSyBSj") ||
+          saved.includes("AIzaSyAR8") ||
+          saved.includes("leaked")
+        ) {
+          localStorage.removeItem("banana_gemini_api_key");
+          return "";
+        }
+        return saved.trim().replace(/^["']|["']$/g, "");
+      }
+    } catch (_) {}
+    return "";
   });
 
   // Automatic countdown timer for Quota rate limit
@@ -210,10 +217,21 @@ export default function App() {
     } catch (err: any) {
       console.error("TTS Error:", err);
       const msg = err.message || "";
-      if (msg.includes("API key not valid") || msg.includes("API_KEY_INVALID")) {
+      if (
+        msg.includes("leaked") ||
+        msg.includes("PERMISSION_DENIED") ||
+        msg.includes("403") ||
+        msg.includes("API key not valid") ||
+        msg.includes("API_KEY_INVALID")
+      ) {
+        try {
+          localStorage.removeItem("banana_gemini_api_key");
+          setCustomApiKey("");
+        } catch (_) {}
         setErrorMessage(
-          "API Key তে সাময়িক সমস্যা দেখা দিয়েছে। ব্যাকআপ ইঞ্জিনে ভয়েস চালু রয়েছে।"
+          "পূর্বের সংরক্ষিত API Key টি ব্লক/বাতিল হয়ে গেছে। অনুগ্রহ করে 'Vercel / API Key' বাটনে আপনার নিজস্ব ফ্রি Gemini API Key প্রদান করুন (aistudio.google.com/app/apikey থেকে ফ্রি পাওয়া যায়)।"
         );
+        setIsApiKeyModalOpen(true);
       } else {
         setErrorMessage(msg || "ভয়েস তৈরি করার সময় সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।");
       }
