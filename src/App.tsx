@@ -25,7 +25,6 @@ import { SAMPLE_MULTI_EMOJI_BENGALI, EMOJI_ACTING_RULES } from "./data/presets";
 import { AudioItem, SupportedLanguage } from "./types";
 import { base64ToUint8Array, pcmToWavBlob, calculatePcmDuration } from "./utils/audioUtils";
 import { generateSpeechDirectly } from "./utils/geminiClient";
-import { generateBrowserSpeechAudio } from "./utils/fallbackTTS";
 
 export default function App() {
   const [channelName, setChannelName] = useState("mdtarakboss2");
@@ -49,6 +48,19 @@ export default function App() {
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [customApiKey, setCustomApiKey] = useState<string>(() => {
     try {
+      // Check URL parameters first (e.g. ?key=AIzaSy... or ?apiKey=AIzaSy...)
+      if (typeof window !== "undefined") {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlKey = urlParams.get("key") || urlParams.get("apiKey");
+        if (urlKey && urlKey.trim().length > 10) {
+          const cleanUrlKey = urlKey.trim().replace(/^["']|["']$/g, "");
+          try {
+            localStorage.setItem("banana_gemini_api_key", cleanUrlKey);
+          } catch (_) {}
+          return cleanUrlKey;
+        }
+      }
+
       const saved = localStorage.getItem("banana_gemini_api_key");
       if (saved) {
         if (
@@ -87,7 +99,7 @@ export default function App() {
       localStorage.setItem("banana_gemini_api_key", newKey);
       setQuotaCountdown(null);
       setErrorMessage(null);
-      setSuccessToast("API Key সংরক্ষিত হয়েছে! এখন ভয়েস তৈরি করুন।");
+      setSuccessToast("🔑 API Key সফলভাবে সংরক্ষিত হয়েছে! এখন স্টুডিও ভয়েস তৈরি করুন।");
     } else {
       localStorage.removeItem("banana_gemini_api_key");
     }
@@ -148,12 +160,15 @@ export default function App() {
           if (errData?.retryAfter) {
             setQuotaCountdown(errData.retryAfter);
           }
+          if (errData?.needsApiKey) {
+            setIsApiKeyModalOpen(true);
+          }
         }
       } catch (serverErr: any) {
         console.warn("Server TTS not responding, trying browser/direct methods...", serverErr);
       }
 
-      // Step 2: Direct Gemini Studio TTS with embedded/user key fallback
+      // Step 2: Direct Gemini Studio TTS with user key fallback
       if (!serverResponseWorked && customApiKey) {
         try {
           audioBase64 = await generateSpeechDirectly(
@@ -171,53 +186,40 @@ export default function App() {
         }
       }
 
-      let newAudioItem: AudioItem;
-
-      // If Gemini Neural audio was generated
-      if (audioBase64) {
-        const pcmBytes = base64ToUint8Array(audioBase64);
-        const wavBlob = pcmToWavBlob(pcmBytes, 24000, 1);
-        const blobUrl = URL.createObjectURL(wavBlob);
-        const duration = calculatePcmDuration(pcmBytes.length, 24000, 16, 1);
-
-        newAudioItem = {
-          id: `take_${Date.now()}`,
-          text: text.trim(),
-          audioBase64: audioBase64 || "",
-          audioBlobUrl: blobUrl,
-          voice: selectedVoice,
-          language: language,
-          createdAt: Date.now(),
-          duration: duration,
-          totalChunks: chunksCount,
-        };
-
-        const langTitle = language === "bengali" ? "বাংলা" : language === "hindi" ? "हिन्दी" : "English";
-        setSuccessToast(`🍌 MʀツBΛNΛNΛ স্টুডিও ভয়েস তৈরি হয়েছে (${langTitle})!`);
-      } else {
-        // Step 3: Seamless Guaranteed Fallback on all mobile phones & browsers
-        const fallbackResult = await generateBrowserSpeechAudio(
-          text.trim(),
-          selectedVoice,
-          language
-        );
-
-        newAudioItem = {
-          id: `take_${Date.now()}`,
-          text: text.trim(),
-          audioBase64: fallbackResult.base64Data,
-          audioBlobUrl: fallbackResult.blobUrl,
-          voice: selectedVoice,
-          language: language,
-          createdAt: Date.now(),
-          duration: fallbackResult.duration,
-          totalChunks: 1,
-        };
-
-        setSuccessToast(
-          `🍌 MʀツBΛNΛNΛ ভয়েস তৈরি হয়েছে! (আল্ট্রা স্টুডিও AI এর জন্য উপরে 🔑 API Key দিন)`
-        );
+      if (!audioBase64) {
+        if (!customApiKey) {
+          setIsApiKeyModalOpen(true);
+          throw new Error(
+            "এই ফোনে ভয়েস তৈরি করার জন্য একটি ফ্রি Gemini API Key প্রয়োজন। অনুগ্রহ করে '🔑 API Key' বক্সে আপনার ফ্রি কী পেস্ট করুন।"
+          );
+        } else {
+          throw new Error(
+            serverErrorMessage ||
+            "ভয়েস তৈরি করার সময় সমস্যা হয়েছে। আপনার API Key টি সঠিক কিনা চেক করুন।"
+          );
+        }
       }
+
+      // Convert PCM 24kHz to Studio High-Fidelity WAV Blob
+      const pcmBytes = base64ToUint8Array(audioBase64);
+      const wavBlob = pcmToWavBlob(pcmBytes, 24000, 1);
+      const blobUrl = URL.createObjectURL(wavBlob);
+      const duration = calculatePcmDuration(pcmBytes.length, 24000, 16, 1);
+
+      const newAudioItem: AudioItem = {
+        id: `take_${Date.now()}`,
+        text: text.trim(),
+        audioBase64: audioBase64 || "",
+        audioBlobUrl: blobUrl,
+        voice: selectedVoice,
+        language: language,
+        createdAt: Date.now(),
+        duration: duration,
+        totalChunks: chunksCount,
+      };
+
+      const langTitle = language === "bengali" ? "বাংলা" : language === "hindi" ? "हिन्दी" : "English";
+      setSuccessToast(`🍌 MʀツBΛNΛNΛ স্টুডিও ভয়েস সফলভাবে তৈরি হয়েছে (${langTitle})!`);
 
       setCurrentAudio(newAudioItem);
       setHistory((prev) => [newAudioItem, ...prev]);
@@ -236,32 +238,21 @@ export default function App() {
       });
     } catch (err: any) {
       console.error("TTS Error:", err);
-      // Even if an unexpected error occurs, fall back to browser speech engine
-      try {
-        const fallback = await generateBrowserSpeechAudio(text.trim(), selectedVoice, language);
-        const fallbackItem: AudioItem = {
-          id: `take_${Date.now()}`,
-          text: text.trim(),
-          audioBase64: fallback.base64Data,
-          audioBlobUrl: fallback.blobUrl,
-          voice: selectedVoice,
-          language: language,
-          createdAt: Date.now(),
-          duration: fallback.duration,
-          totalChunks: 1,
-        };
-        setCurrentAudio(fallbackItem);
-        setHistory((prev) => [fallbackItem, ...prev]);
-        setErrorMessage(null);
-        setSuccessToast("🍌 MʀツBΛNΛNΛ ভয়েস সফলভাবে চালু হয়েছে!");
-        setTimeout(() => setSuccessToast(null), 5000);
-      } catch (finalErr) {
-        setErrorMessage("ভয়েস তৈরি করার সময় সমস্যা হয়েছে। অনুগ্রহ করে পেজটি রিফ্রেশ করুন।");
+      const msg = err.message || "";
+      if (
+        msg.includes("leaked") ||
+        msg.includes("PERMISSION_DENIED") ||
+        msg.includes("403") ||
+        msg.includes("API key not valid") ||
+        msg.includes("API_KEY_INVALID") ||
+        !customApiKey
+      ) {
+        setIsApiKeyModalOpen(true);
       }
+      setErrorMessage(msg || "ভয়েস তৈরি করার সময় সমস্যা হয়েছে। অনুগ্রহ করে API Key চেক করুন।");
     } finally {
       setIsLoadingAudio(false);
     }
-
   };
 
   return (
