@@ -25,6 +25,7 @@ import { SAMPLE_MULTI_EMOJI_BENGALI, EMOJI_ACTING_RULES } from "./data/presets";
 import { AudioItem, SupportedLanguage } from "./types";
 import { base64ToUint8Array, pcmToWavBlob, calculatePcmDuration } from "./utils/audioUtils";
 import { generateSpeechDirectly } from "./utils/geminiClient";
+import { generateBrowserSpeechAudio } from "./utils/fallbackTTS";
 
 export default function App() {
   const [channelName, setChannelName] = useState("mdtarakboss2");
@@ -153,7 +154,7 @@ export default function App() {
       }
 
       // Step 2: Direct Gemini Studio TTS with embedded/user key fallback
-      if (!serverResponseWorked) {
+      if (!serverResponseWorked && customApiKey) {
         try {
           audioBase64 = await generateSpeechDirectly(
             text.trim(),
@@ -170,31 +171,53 @@ export default function App() {
         }
       }
 
-      // If audioBase64 could not be obtained
-      if (!audioBase64) {
-        throw new Error(
-          serverErrorMessage ||
-          "Google AI Studio-এর ফ্রি কোটা এই মুহূর্তে কিছুটা ব্যস্ত। অনুগ্রহ করে কয়েক সেকেন্ড পর আবার চেষ্টা করুন অথবা 'Vercel / API Key' বাটনে আপনার নিজস্ব ফ্রি Gemini Key যোগ করুন।"
+      let newAudioItem: AudioItem;
+
+      // If Gemini Neural audio was generated
+      if (audioBase64) {
+        const pcmBytes = base64ToUint8Array(audioBase64);
+        const wavBlob = pcmToWavBlob(pcmBytes, 24000, 1);
+        const blobUrl = URL.createObjectURL(wavBlob);
+        const duration = calculatePcmDuration(pcmBytes.length, 24000, 16, 1);
+
+        newAudioItem = {
+          id: `take_${Date.now()}`,
+          text: text.trim(),
+          audioBase64: audioBase64 || "",
+          audioBlobUrl: blobUrl,
+          voice: selectedVoice,
+          language: language,
+          createdAt: Date.now(),
+          duration: duration,
+          totalChunks: chunksCount,
+        };
+
+        const langTitle = language === "bengali" ? "বাংলা" : language === "hindi" ? "हिन्दी" : "English";
+        setSuccessToast(`🍌 MʀツBΛNΛNΛ স্টুডিও ভয়েস তৈরি হয়েছে (${langTitle})!`);
+      } else {
+        // Step 3: Seamless Guaranteed Fallback on all mobile phones & browsers
+        const fallbackResult = await generateBrowserSpeechAudio(
+          text.trim(),
+          selectedVoice,
+          language
+        );
+
+        newAudioItem = {
+          id: `take_${Date.now()}`,
+          text: text.trim(),
+          audioBase64: fallbackResult.base64Data,
+          audioBlobUrl: fallbackResult.blobUrl,
+          voice: selectedVoice,
+          language: language,
+          createdAt: Date.now(),
+          duration: fallbackResult.duration,
+          totalChunks: 1,
+        };
+
+        setSuccessToast(
+          `🍌 MʀツBΛNΛNΛ ভয়েস তৈরি হয়েছে! (আল্ট্রা স্টুডিও AI এর জন্য উপরে 🔑 API Key দিন)`
         );
       }
-
-      // Convert PCM 24kHz to Studio High-Fidelity WAV Blob
-      const pcmBytes = base64ToUint8Array(audioBase64);
-      const wavBlob = pcmToWavBlob(pcmBytes, 24000, 1);
-      const blobUrl = URL.createObjectURL(wavBlob);
-      const duration = calculatePcmDuration(pcmBytes.length, 24000, 16, 1);
-
-      const newAudioItem: AudioItem = {
-        id: `take_${Date.now()}`,
-        text: text.trim(),
-        audioBase64: audioBase64 || "",
-        audioBlobUrl: blobUrl,
-        voice: selectedVoice,
-        language: language,
-        createdAt: Date.now(),
-        duration: duration,
-        totalChunks: chunksCount,
-      };
 
       setCurrentAudio(newAudioItem);
       setHistory((prev) => [newAudioItem, ...prev]);
@@ -202,10 +225,7 @@ export default function App() {
       // Clear any pending error banners and countdowns
       setErrorMessage(null);
       setQuotaCountdown(null);
-
-      const langTitle = language === "bengali" ? "বাংলা" : language === "hindi" ? "हिन्दी" : "English";
-      setSuccessToast(`MʀツBΛNΛNΛ VOICE সফলভাবে তৈরি হয়েছে (${langTitle})!`);
-      setTimeout(() => setSuccessToast(null), 5000);
+      setTimeout(() => setSuccessToast(null), 6000);
 
       // Celebration confetti
       confetti({
@@ -216,28 +236,32 @@ export default function App() {
       });
     } catch (err: any) {
       console.error("TTS Error:", err);
-      const msg = err.message || "";
-      if (
-        msg.includes("leaked") ||
-        msg.includes("PERMISSION_DENIED") ||
-        msg.includes("403") ||
-        msg.includes("API key not valid") ||
-        msg.includes("API_KEY_INVALID")
-      ) {
-        try {
-          localStorage.removeItem("banana_gemini_api_key");
-          setCustomApiKey("");
-        } catch (_) {}
-        setErrorMessage(
-          "পূর্বের সংরক্ষিত API Key টি ব্লক/বাতিল হয়ে গেছে। অনুগ্রহ করে 'Vercel / API Key' বাটনে আপনার নিজস্ব ফ্রি Gemini API Key প্রদান করুন (aistudio.google.com/app/apikey থেকে ফ্রি পাওয়া যায়)।"
-        );
-        setIsApiKeyModalOpen(true);
-      } else {
-        setErrorMessage(msg || "ভয়েস তৈরি করার সময় সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।");
+      // Even if an unexpected error occurs, fall back to browser speech engine
+      try {
+        const fallback = await generateBrowserSpeechAudio(text.trim(), selectedVoice, language);
+        const fallbackItem: AudioItem = {
+          id: `take_${Date.now()}`,
+          text: text.trim(),
+          audioBase64: fallback.base64Data,
+          audioBlobUrl: fallback.blobUrl,
+          voice: selectedVoice,
+          language: language,
+          createdAt: Date.now(),
+          duration: fallback.duration,
+          totalChunks: 1,
+        };
+        setCurrentAudio(fallbackItem);
+        setHistory((prev) => [fallbackItem, ...prev]);
+        setErrorMessage(null);
+        setSuccessToast("🍌 MʀツBΛNΛNΛ ভয়েস সফলভাবে চালু হয়েছে!");
+        setTimeout(() => setSuccessToast(null), 5000);
+      } catch (finalErr) {
+        setErrorMessage("ভয়েস তৈরি করার সময় সমস্যা হয়েছে। অনুগ্রহ করে পেজটি রিফ্রেশ করুন।");
       }
     } finally {
       setIsLoadingAudio(false);
     }
+
   };
 
   return (

@@ -180,8 +180,11 @@ export async function generateSpeechDirectly(
   language: "bengali" | "english" | "hindi",
   apiKey?: string,
   customPrompt = ""
-): Promise<string> {
+): Promise<string | null> {
   const availableKeys = getClientAvailableKeys(apiKey);
+  if (availableKeys.length === 0) {
+    return null;
+  }
   const langKey = language === "english" || language === "hindi" ? language : "bengali";
   const chunks = splitTextIntoTTSChunks(text, langKey, voiceName);
 

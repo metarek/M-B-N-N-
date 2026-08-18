@@ -238,8 +238,9 @@ app.post("/api/tts", async (req, res) => {
     const langKey = (language === "english" || language === "hindi") ? language : "bengali";
 
     if (availableKeys.length === 0) {
-      return res.status(400).json({
-        error: "কোনো সক্রিয় Gemini API Key পাওয়া যায়নি। অনুগ্রহ করে উপরে 'Vercel / API Key' বাটনে আপনার নিজস্ব ফ্রি Gemini API Key প্রদান করুন (aistudio.google.com/app/apikey থেকে ফ্রি পাওয়া যায়)।",
+      return res.status(200).json({
+        fallback: true,
+        message: "No Gemini API key on server. Falling back to browser speech engine.",
       });
     }
 
