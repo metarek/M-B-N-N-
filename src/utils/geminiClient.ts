@@ -103,9 +103,9 @@ export function getEmojiActingDirective(
 export function splitTextIntoTTSChunks(
   rawText: string,
   language: "bengali" | "english" | "hindi",
-  voiceName: string = "Mr.banana"
+  voiceName: string = "Mr.banana.pro"
 ): Array<{ text: string; directive: string }> {
-  if (rawText.trim().length <= 2000) {
+  if (rawText.trim().length <= 3500) {
     return [{
       text: rawText.trim(),
       directive: getEmojiActingDirective(rawText, language, voiceName),
@@ -117,7 +117,7 @@ export function splitTextIntoTTSChunks(
   let currentBlock = "";
 
   for (const line of rawLines) {
-    if ((currentBlock + "\n" + line).length <= 1800) {
+    if ((currentBlock + "\n" + line).length <= 3000) {
       currentBlock = currentBlock ? `${currentBlock}\n${line}` : line;
     } else {
       if (currentBlock) {
@@ -126,13 +126,13 @@ export function splitTextIntoTTSChunks(
           directive: getEmojiActingDirective(currentBlock, language, voiceName),
         });
       }
-      if (line.length <= 1800) {
+      if (line.length <= 3000) {
         currentBlock = line;
       } else {
         const sentences = line.split(/(?<=[.?!।|])\s+/).filter((s) => s.trim().length > 0);
         currentBlock = "";
         for (const sent of sentences) {
-          if ((currentBlock + " " + sent).length > 1800 && currentBlock.length > 0) {
+          if ((currentBlock + " " + sent).length > 3000 && currentBlock.length > 0) {
             chunks.push({
               text: currentBlock.trim(),
               directive: getEmojiActingDirective(currentBlock, language, voiceName),
@@ -167,10 +167,41 @@ let clientRotationIndex = 0;
 
 export function getClientAvailableKeys(userKey?: string): string[] {
   const keys: string[] = [];
-  if (userKey) {
+
+  if (userKey && typeof userKey === "string") {
     const userKeys = userKey.split(/[,\n]/).map((k) => k.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
     keys.push(...userKeys);
   }
+
+  // Check localStorage in browser
+  if (typeof window !== "undefined") {
+    try {
+      const savedKey = localStorage.getItem("banana_gemini_api_key");
+      if (savedKey) {
+        const savedKeys = savedKey.split(/[,\n]/).map((k) => k.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+        keys.push(...savedKeys);
+      }
+    } catch (_) {}
+
+    // Check URL parameters (?key=... or ?apiKey=...)
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlKey = urlParams.get("key") || urlParams.get("apiKey");
+      if (urlKey && urlKey.trim().length > 10) {
+        keys.push(urlKey.trim().replace(/^["']|["']$/g, ""));
+      }
+    } catch (_) {}
+  }
+
+  // Check Vite environment variable (set in Vercel or GitHub actions)
+  try {
+    const viteKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+    if (viteKey && typeof viteKey === "string") {
+      const vKeys = viteKey.split(/[,\n]/).map((k: string) => k.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+      keys.push(...vKeys);
+    }
+  } catch (_) {}
+
   return Array.from(new Set(keys)).filter((k) => k.length > 10);
 }
 
@@ -307,17 +338,25 @@ export async function generateSpeechDirectly(
   }
 
   if (!allChunksSuccessful || audioBuffers.length === 0 || audioBuffers.length < chunks.length) {
-    if (lastErrorMsg.includes("429") || lastErrorMsg.includes("Quota exceeded") || lastErrorMsg.includes("RESOURCE_EXHAUSTED")) {
-      let retrySeconds = 45;
+    if (
+      lastErrorMsg.includes("429") ||
+      lastErrorMsg.includes("Quota exceeded") ||
+      lastErrorMsg.includes("RESOURCE_EXHAUSTED") ||
+      lastErrorMsg.includes("rate-limits")
+    ) {
+      let retrySeconds = 25;
       const retryMatch =
         lastErrorMsg.match(/retry in\s+([\d\.]+)s/i) ||
         lastErrorMsg.match(/retryDelay["']?\s*:\s*["']?(\d+)s?/i);
       if (retryMatch && retryMatch[1]) {
         retrySeconds = Math.max(10, Math.ceil(parseFloat(retryMatch[1])));
       }
-      throw new Error(
-        `গুগল এপিআই-এর প্রতি মিনিটের ফ্রি কোটা সীমা শেষ হয়েছে। অনুগ্রহ করে ${retrySeconds} সেকেন্ড অপেক্ষা করে আবার চেষ্টা করুন।`
+      const quotaErr: any = new Error(
+        `গুগল এপিআই-এর প্রতি মিনিটের ফ্রি কোটা সাময়িকভাবে শেষ হয়েছে (429 Quota Exceeded)। অনুগ্রহ করে ${retrySeconds} সেকেন্ড অপেক্ষা করুন অথবা একাধিক কী যুক্ত করুন।`
       );
+      quotaErr.isQuotaExceeded = true;
+      quotaErr.retryAfter = retrySeconds;
+      throw quotaErr;
     }
     throw new Error(
       `ভয়েস সম্পূর্ণভাবে তৈরি করা সম্ভব হয়নি (${lastErrorMsg || "API Error"}). আপনার API Key চেক করুন।`

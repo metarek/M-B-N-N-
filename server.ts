@@ -17,15 +17,22 @@ let globalKeyRotationIndex = 0;
 function getAllAvailableKeys(userKey?: string): string[] {
   const keys: string[] = [];
   if (userKey) {
-    // Support comma or newline separated user keys
     const userKeys = userKey.split(/[,\n]/).map(k => k.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
     keys.push(...userKeys);
   }
-  if (process.env.GEMINI_API_KEY) {
-    const envKeys = process.env.GEMINI_API_KEY.split(/[,\n]/).map(k => k.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
-    keys.push(...envKeys);
+  const envSources = [
+    process.env.GEMINI_API_KEY,
+    process.env.VITE_GEMINI_API_KEY,
+    process.env.AI_STUDIO_KEY,
+    process.env.GOOGLE_API_KEY,
+    process.env.API_KEY,
+  ];
+  for (const envVal of envSources) {
+    if (envVal && typeof envVal === "string") {
+      const splitKeys = envVal.split(/[,\n]/).map(k => k.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+      keys.push(...splitKeys);
+    }
   }
-  // Deduplicate keys preserving order
   return Array.from(new Set(keys)).filter(k => k.length > 10);
 }
 
@@ -149,15 +156,15 @@ function getEmojiActingDirective(
 }
 
 /**
- * Split massive text into optimal TTS chunks (up to 2000 chars per chunk to avoid hitting API rate limits)
+ * Split massive text into optimal TTS chunks (up to 3500 chars per chunk to maximize quota efficiency and avoid hitting 3 RPM rate limits)
  */
 function splitTextIntoTTSChunks(
   rawText: string,
   language: "bengali" | "english" | "hindi",
-  voiceName: string = "Puck"
+  voiceName: string = "Fenrir"
 ): Array<{ text: string; directive: string }> {
-  // If the total text is within 2000 characters, send as a SINGLE chunk for instant, quota-friendly generation!
-  if (rawText.trim().length <= 2000) {
+  // If the total text is within 3500 characters, send as a SINGLE chunk for instant, quota-friendly generation!
+  if (rawText.trim().length <= 3500) {
     return [{
       text: rawText.trim(),
       directive: getEmojiActingDirective(rawText, language, voiceName),
@@ -171,7 +178,7 @@ function splitTextIntoTTSChunks(
   let currentBlock = "";
 
   for (const line of rawLines) {
-    if ((currentBlock + "\n" + line).length <= 1800) {
+    if ((currentBlock + "\n" + line).length <= 3000) {
       currentBlock = currentBlock ? `${currentBlock}\n${line}` : line;
     } else {
       if (currentBlock) {
@@ -180,14 +187,14 @@ function splitTextIntoTTSChunks(
           directive: getEmojiActingDirective(currentBlock, language, voiceName),
         });
       }
-      if (line.length <= 1800) {
+      if (line.length <= 3000) {
         currentBlock = line;
       } else {
         // Break super long line into sentences
         const sentences = line.split(/(?<=[.?!।|])\s+/).filter((s) => s.trim().length > 0);
         currentBlock = "";
         for (const sent of sentences) {
-          if ((currentBlock + " " + sent).length > 1800 && currentBlock.length > 0) {
+          if ((currentBlock + " " + sent).length > 3000 && currentBlock.length > 0) {
             chunks.push({
               text: currentBlock.trim(),
               directive: getEmojiActingDirective(currentBlock, language, voiceName),

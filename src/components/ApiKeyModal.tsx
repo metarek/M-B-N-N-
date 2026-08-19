@@ -189,7 +189,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               type={showKey ? "text" : "password"}
               value={inputKey}
               onChange={(e) => setInputKey(e.target.value)}
-              placeholder="AIzaSy..."
+              placeholder="AIzaSy... (একাধিক Key দিতে কমা ব্যবহার করুন: Key1, Key2)"
               autoFocus
               className="w-full pl-3.5 pr-28 py-3 rounded-xl bg-zinc-900 border border-zinc-700 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 focus:outline-none text-xs text-white font-mono placeholder:text-zinc-600 select-all"
             />
@@ -260,6 +260,11 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             </button>
           </div>
 
+          <div className="p-2 rounded-lg bg-yellow-400/10 border border-yellow-400/20 text-[11px] text-yellow-200 flex items-center gap-1.5">
+            <span className="font-bold text-yellow-400">💡 প্রো টিপ (Quota Bypass):</span>
+            <span>একাধিক Key কমা (,) দিয়ে দিলে একটার কোটা শেষ হলে স্বয়ংক্রিয়ভাবে পরবর্তী কী দিয়ে ভয়েস তৈরি হবে!</span>
+          </div>
+
           {/* Test Result Message */}
           {testResult && (
             <div
@@ -321,15 +326,31 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             </ol>
           </div>
 
-          <div className="pt-1 border-t border-zinc-800/60 flex items-center justify-between text-zinc-400">
-            <span>💡 Vercel এ স্থায়ীভাবে যুক্ত করার নিয়ম:</span>
-            <button
-              onClick={copyVercelEnvName}
-              className="inline-flex items-center gap-1 text-[10px] text-yellow-400 hover:underline cursor-pointer"
-            >
-              {copiedEnv ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-              <span>{copiedEnv ? "কপি হয়েছে!" : "GEMINI_API_KEY কপি করুন"}</span>
-            </button>
+          <div className="pt-2 border-t border-zinc-800/60 space-y-2 text-zinc-400">
+            <div className="flex items-center justify-between">
+              <span className="text-white font-bold flex items-center gap-1.5 text-xs">
+                <span>🚀 Vercel / GitHub ডিপ্লয়মেন্ট গাইড:</span>
+              </span>
+              <button
+                onClick={copyVercelEnvName}
+                className="inline-flex items-center gap-1 text-[11px] text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded-md hover:bg-yellow-400/20 border border-yellow-400/30 cursor-pointer font-bold"
+              >
+                {copiedEnv ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                <span>{copiedEnv ? "কপি হয়েছে!" : "GEMINI_API_KEY"}</span>
+              </button>
+            </div>
+            <div className="bg-black/60 p-2.5 rounded-lg border border-zinc-800 text-[11px] space-y-1 text-zinc-300">
+              <p className="text-amber-300 font-semibold">⚡ Vercel এ ডিপ্লয় করার সময়:</p>
+              <p>
+                ১. Vercel Dashboard {">"} আপনার Project {">"} <strong>Settings</strong> {">"} <strong>Environment Variables</strong> এ যান।
+              </p>
+              <p>
+                ২. Key নাম দিন <code className="text-yellow-300 font-mono bg-zinc-800 px-1 py-0.5 rounded">GEMINI_API_KEY</code> এবং Value-তে আপনার AI Studio কী পেস্ট করে <strong>Save</strong> ও <strong>Redeploy</strong> করুন।
+              </p>
+              <p className="text-emerald-400 pt-1 font-medium">
+                ✨ এছাড়াও যে কেউ লিঙ্কে ঢুকলে এই পপআপে ফ্রি কী পেস্ট করলেই ব্রাউজারে সঙ্গে সঙ্গে ভয়েস চালু হয়ে যাবে!
+              </p>
+            </div>
           </div>
         </div>
 

@@ -129,7 +129,7 @@ export default function App() {
     let chunksCount = 1;
 
     try {
-      // Step 1: Attempt Server Gemini Studio Generation
+      // Step 1: Request Speech from Server TTS Engine
       let serverResponseWorked = false;
       let serverErrorMessage = "";
 
@@ -141,7 +141,7 @@ export default function App() {
             text: text.trim(),
             voiceName: selectedVoice,
             language: language,
-            apiKey: customApiKey || undefined,
+            apiKey: customApiKey ? customApiKey.trim() : undefined,
           }),
         });
 
@@ -156,26 +156,24 @@ export default function App() {
           }
         } else {
           const errData = await response.json().catch(() => ({}));
-          serverErrorMessage = errData?.error || "Server AI voice generation error";
+          serverErrorMessage = errData?.error || "ভয়েস তৈরি করার সময় সমস্যা হয়েছে।";
           if (errData?.retryAfter) {
             setQuotaCountdown(errData.retryAfter);
           }
-          if (errData?.needsApiKey) {
-            setIsApiKeyModalOpen(true);
-          }
         }
       } catch (serverErr: any) {
-        console.warn("Server TTS not responding, trying browser/direct methods...", serverErr);
+        console.warn("Server TTS connection error:", serverErr);
+        serverErrorMessage = "সার্ভারের সাথে সংযোগ স্থাপন করা সম্ভব হয়নি।";
       }
 
-      // Step 2: Direct Gemini Studio TTS with user key fallback
-      if (!serverResponseWorked && customApiKey) {
+      // Step 2: If server TTS didn't succeed, try direct client generation (using custom key, localStorage, or VITE_GEMINI_API_KEY)
+      if (!serverResponseWorked) {
         try {
           audioBase64 = await generateSpeechDirectly(
             text.trim(),
             selectedVoice,
             language,
-            customApiKey
+            customApiKey || undefined
           );
           if (audioBase64) {
             serverResponseWorked = true;
@@ -190,7 +188,7 @@ export default function App() {
         if (!customApiKey) {
           setIsApiKeyModalOpen(true);
           throw new Error(
-            "এই ফোনে ভয়েস তৈরি করার জন্য একটি ফ্রি Gemini API Key প্রয়োজন। অনুগ্রহ করে '🔑 API Key' বক্সে আপনার ফ্রি কী পেস্ট করুন।"
+            "Vercel/GitHub এ ভয়েস তৈরি করার জন্য একটি Gemini API Key প্রয়োজন। উপরে '🔑 API Key' বক্সে আপনার ফ্রি কী পেস্ট করুন অথবা Vercel Settings এ GEMINI_API_KEY সেট করুন।"
           );
         } else {
           throw new Error(
@@ -240,16 +238,21 @@ export default function App() {
       console.error("TTS Error:", err);
       const msg = err.message || "";
       if (
-        msg.includes("leaked") ||
-        msg.includes("PERMISSION_DENIED") ||
-        msg.includes("403") ||
-        msg.includes("API key not valid") ||
-        msg.includes("API_KEY_INVALID") ||
-        !customApiKey
+        err?.isQuotaExceeded ||
+        msg.includes("429") ||
+        msg.includes("Quota") ||
+        msg.includes("quota") ||
+        msg.includes("RESOURCE_EXHAUSTED") ||
+        msg.includes("rate-limits")
       ) {
-        setIsApiKeyModalOpen(true);
+        const retrySec = err?.retryAfter || 25;
+        setQuotaCountdown(retrySec);
+        setErrorMessage(
+          `গুগল এপিআই-এর প্রতি মিনিটের ফ্রি কোটা সাময়িকভাবে শেষ হয়েছে (429 Quota Exceeded)। অনুগ্রহ করে ${retrySec} সেকেন্ড অপেক্ষা করুন অথবা উপরে '🔑 API Key' বাটনে আপনার নিজস্ব আরেকটি ফ্রি Key দিন।`
+        );
+      } else {
+        setErrorMessage(msg || "ভয়েস তৈরি করার সময় সমস্যা হয়েছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।");
       }
-      setErrorMessage(msg || "ভয়েস তৈরি করার সময় সমস্যা হয়েছে। অনুগ্রহ করে API Key চেক করুন।");
     } finally {
       setIsLoadingAudio(false);
     }
