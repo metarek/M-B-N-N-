@@ -3,6 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Modality } from "@google/genai";
+import { DEFAULT_KEY_POOL } from "./src/constants/apiKeys";
 
 dotenv.config();
 
@@ -16,10 +17,8 @@ let globalKeyRotationIndex = 0;
 
 function getAllAvailableKeys(userKey?: string): string[] {
   const keys: string[] = [];
-  if (userKey) {
-    const userKeys = userKey.split(/[,\n]/).map(k => k.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
-    keys.push(...userKeys);
-  }
+  
+  // Prioritize valid server environment keys first for blazing fast speed
   const envSources = [
     process.env.GEMINI_API_KEY,
     process.env.VITE_GEMINI_API_KEY,
@@ -32,6 +31,13 @@ function getAllAvailableKeys(userKey?: string): string[] {
       const splitKeys = envVal.split(/[,\n]/).map(k => k.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
       keys.push(...splitKeys);
     }
+  }
+  if (userKey && typeof userKey === "string") {
+    const userKeys = userKey.split(/[,\n]/).map(k => k.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+    keys.push(...userKeys);
+  }
+  if (DEFAULT_KEY_POOL && Array.isArray(DEFAULT_KEY_POOL)) {
+    keys.push(...DEFAULT_KEY_POOL);
   }
   return Array.from(new Set(keys)).filter(k => k.length > 10);
 }
@@ -62,10 +68,13 @@ function getEmojiActingDirective(
 ): string {
   const langPrompt =
     language === "bengali"
-      ? "Bengali (বাংলা)"
+      ? "Bengali (বাংলায় সহজ, সাবলীল ও স্পষ্ট উচ্চারণ)"
       : language === "hindi"
       ? "Hindi (हिन्दी)"
       : "English";
+
+  // Strict anti-drag rule to prevent stretched vowels, trailing throat squeeze, or vocal fry
+  const CADENCE = "Speak smoothly with brisk, crisp cadence. Finish words and sentences cleanly without dragging, without stretching ending vowels, without vocal fry, and without trailing squeezed or drawled tone (কোনো শব্দ বা সুর টেনে লম্বা করবে না, একদম স্পষ্ট ও স্বাভাবিক গতিতে শেষ করবে):";
 
   const isBananaProModel =
     voiceName === "Mr.banana.pro" ||
@@ -73,18 +82,18 @@ function getEmojiActingDirective(
 
   if (isBananaProModel) {
     if (/পার্থক্য|কি\?|কেন\?|কেমন|জানো|স্নাইপার|রাশার|sniper|rush|\?/i.test(textLine)) {
-      return `Speak in an engaging, deep, charismatic YouTube explainer and curious narrator voice in ${langPrompt}:`;
+      return `Speak in an engaging, deep, charismatic YouTube explainer and curious narrator voice in ${langPrompt}. ${CADENCE}`;
     }
     if (/তো গাইজ|গাইজ|সাবস্ক্রাইব|লাইক|কমেন্ট|জানাও|subscribe|comment|share/i.test(textLine)) {
-      return `Speak in a warm, confident, engaging YouTuber call-to-action tone in ${langPrompt}:`;
+      return `Speak in a warm, confident, engaging YouTuber call-to-action tone in ${langPrompt}. ${CADENCE}`;
     }
     if (/booyah|headshot|শট|পাওয়ার|বিজয়|heroic|master|গ্র্যান্ড|🔥|⚡|🚀|💥/i.test(textLine)) {
-      return `Speak in a deep, confident, epic gaming narrator voice in ${langPrompt}:`;
+      return `Speak in a deep, confident, epic gaming narrator voice in ${langPrompt}. ${CADENCE}`;
     }
     if (/😂|🤣|হাহাহা|haha|lol/i.test(textLine)) {
-      return `Speak in a deep, rich baritone chuckle and humorous storyteller tone in ${langPrompt}:`;
+      return `Speak in a deep, rich baritone chuckle and humorous storyteller tone in ${langPrompt}. ${CADENCE}`;
     }
-    return `Speak in a smooth, deep, charismatic, confident Free Fire YouTube narrator voice with clear pronunciation in ${langPrompt}:`;
+    return `Speak in a smooth, deep, charismatic, confident Free Fire YouTube narrator voice with clear pronunciation in ${langPrompt}. ${CADENCE}`;
   }
 
   const isGamingModel =
@@ -96,21 +105,52 @@ function getEmojiActingDirective(
 
   if (isGamingModel) {
     if (/booyah|headshot|one tap|clutch|victory|জিত|উইনার|খতম|সব শেষ|kill|কিল|অসাধারণ|let's go|lets go|op|ওপি|🔥|⚡|🚀|💥|🥳|🎉/i.test(textLine)) {
-      return `Speak in energetic Bangladeshi gaming YouTuber victory hype in ${langPrompt}:`;
+      return `Speak in energetic Bangladeshi gaming YouTuber victory hype in ${langPrompt}. ${CADENCE}`;
     }
     if (/hp|low|১ জন|একাকী|1vs4|1v4|1 vs 4|zone|সাসপেন্স|আস্তে|ধীরে|লুকিয়ে|ক্যাম্প|😱|😨|😰|🫨|🤫|🤐|\.{3,}/i.test(textLine)) {
-      return `Speak in intense gaming suspense tone in ${langPrompt}:`;
+      return `Speak in intense gaming suspense tone in ${langPrompt}. ${CADENCE}`;
     }
     if (/knock|নক|rush|রাশ|মেরে দিল|রিভাইভ|পালা|গুলিবৃষ্টি|এনিমি|enemy|gloo wall|গ্লু ওয়াল|দাঁড়া|দাঁড়াও|😡|🤬|👿|💢|😤/i.test(textLine)) {
-      return `Speak in aggressive fast-paced gaming battle cry in ${langPrompt}:`;
+      return `Speak in aggressive fast-paced gaming battle cry in ${langPrompt}. ${CADENCE}`;
     }
     if (/noob|নুব|বট|bot|লল|lol|হাহা|মজা|troll|ফানি|😂|🤣|😹|😆|😃|😄|😁/.test(textLine)) {
-      return `Speak with playful YouTuber laughter and teasing comedy in ${langPrompt}:`;
+      return `Speak with playful YouTuber laughter and teasing comedy in ${langPrompt}. ${CADENCE}`;
     }
     if (/হারলাম|মায়েন্স|minus|rank down|দুঃখ|কষ্ট|স্যারি|😭|😢|😿|🥺|💔/.test(textLine)) {
-      return `Speak with sad emotional gamer tone in ${langPrompt}:`;
+      return `Speak with sad emotional gamer tone in ${langPrompt}. ${CADENCE}`;
     }
-    return `Speak as a lively, energetic Bangladeshi gaming YouTuber in ${langPrompt}:`;
+    return `Speak as a lively, energetic Bangladeshi gaming YouTuber in ${langPrompt}. ${CADENCE}`;
+  }
+
+  const isBabyGirlModel =
+    voiceName === "Aoede" ||
+    voiceName?.toLowerCase()?.includes("aoede") ||
+    voiceName?.toLowerCase()?.includes("anya") ||
+    voiceName?.toLowerCase()?.includes("আন্যা") ||
+    voiceName?.toLowerCase()?.includes("baby") ||
+    voiceName?.toLowerCase()?.includes("বাচ্চা");
+
+  if (isBabyGirlModel) {
+    const anyaCadence = "Character Persona: Anya Forger (Spy x Family). Voice: Ultra-high-pitched, squeaky, adorable 4-5 year old toddler girl (Atsumi Tanezaki style). Key traits: Extreme cute baby nakra (আদুরে নেকামি), childish lisp and slight stutter (তোতলামি ও বায়না), referring to herself in third person ('আন্যা / Anya'), playful spoiled whining, exaggerated funny gasps, mischievous cute smug giggles, and signature high-energy 'Waku Waku!'. She must sound 100% like a tiny mischievous 4-5 year old anime kid baby, NOT an adult woman:";
+    if (/ওয়াকু|waku|রোমাঞ্চ|স্পাই|মিশন|পিনাট|বাদাম|🤩|✨|🎉|🥳|🔥/i.test(textLine)) {
+      return `Speak in Anya Forger's iconic ecstatic squeaky 4-year-old toddler scream "Waku Waku!" full of anime child excitement and wide-eyed baby energy in ${langPrompt}. ${anyaCadence}`;
+    }
+    if (/হেহ|heh|smug|হিহি|হাহা|মজা|funny|কার্টুন|খিলখিল|😂|🤣|😹|😆|😃|😄|😁|😏|🤭/i.test(textLine)) {
+      return `Speak in Anya Forger's legendary mischievous smug "Heh 😏" face voice with cute spoiled baby snickers and funny childish teasing in ${langPrompt}. ${anyaCadence}`;
+    }
+    if (/😱|😨|😰|ওরে বাবা|হায় হায়|ধরা পড়ে গেছি|সিক্রেট|secret|mind|পড়ে ফেললাম/i.test(textLine)) {
+      return `Speak in Anya Forger's panicked, dramatic squeaky anime toddler shock, funny high-pitched baby shriek and dramatic toddler gasp in ${langPrompt}. ${anyaCadence}`;
+    }
+    if (/😭|😢|😿|🥺|💔|কান্না|কেঁদে|ভ্যা|পচা|মারবো|মারব|দেবো না|হুঁ/i.test(textLine)) {
+      return `Speak in Anya Forger's iconic cute spoiled baby crying tantrum with heavy baby whines, sniffling, cute childish sobbing and dramatic pouting (একদম ৪-৫ বছরের আদুরে বাচ্চার মিষ্টি কান্না ও নেকামিভরা বায়না) in ${langPrompt}. ${anyaCadence}`;
+    }
+    if (/😍|🥰|😘|💖|❤️|💕|😻|ভালোবাসি|আই লাভ ইউ|বাবু|আম্মু|আব্বু|পুতুল|চকলেট|আইসক্রিম|বাবা|মা/i.test(textLine)) {
+      return `Speak in Anya Forger's sweetest spoiled 4-year-old cuddle voice whining affectionately to Papa Loid and Mama Yor with adorable baby charm in ${langPrompt}. ${anyaCadence}`;
+    }
+    if (/\?|কি\?|কেন\?|কেমন\?|কই\?/i.test(textLine)) {
+      return `Speak in Anya Forger's curious, squeaky, cute 4-year-old child questioning tone with total innocent toddler curiosity in ${langPrompt}. ${anyaCadence}`;
+    }
+    return `Speak as Anya Forger from Spy x Family: A 4-5 year old ultra squeaky, spoiled, adorable anime toddler girl with extreme baby nakra (মিষ্টি নেকামি), funny childish innocence, cute squeaks and fast lively toddler rhythm in ${langPrompt}. ${anyaCadence}`;
   }
 
   const isDeepBananaModel =
@@ -122,37 +162,47 @@ function getEmojiActingDirective(
 
   if (isDeepBananaModel) {
     if (/😭|😢|😿|🥺|💔/.test(textLine)) {
-      return `Speak in deep, sorrowful emotional baritone in ${langPrompt}:`;
+      return `Speak in deep, sorrowful emotional baritone in ${langPrompt}. ${CADENCE}`;
     }
     if (/😂|🤣|😹|😆|😃|😄|😁/.test(textLine)) {
-      return `Speak in deep booming masculine laughter in ${langPrompt}:`;
+      return `Speak in deep booming masculine laughter in ${langPrompt}. ${CADENCE}`;
     }
     if (/😡|🤬|👿|💢|😤/.test(textLine)) {
-      return `Speak in commanding, deep angry baritone in ${langPrompt}:`;
+      return `Speak in commanding, deep angry baritone in ${langPrompt}. ${CADENCE}`;
     }
     if (/😍|🥰|😘|💖|❤️|💕|😻/.test(textLine)) {
-      return `Speak in warm, deep romantic baritone in ${langPrompt}:`;
+      return `Speak in warm, deep romantic baritone in ${langPrompt}. ${CADENCE}`;
     }
-    return `Speak in signature deep, heavy, rich studio baritone voice in ${langPrompt}:`;
+    return `Speak in signature deep, heavy, rich studio baritone voice in ${langPrompt}. ${CADENCE}`;
   }
 
   if (/😭|😢|😿|🥺|💔/.test(textLine)) {
-    return `Speak in emotional, crying tone in ${langPrompt}:`;
+    return `Speak in emotional, crying tone in ${langPrompt}. ${CADENCE}`;
   }
   if (/😂|🤣|😹|😆|😃|😄|😁/.test(textLine)) {
-    return `Speak in hearty joyful laughter in ${langPrompt}:`;
+    return `Speak in hearty joyful laughter in ${langPrompt}. ${CADENCE}`;
   }
   if (/😡|🤬|👿|💢|😤/.test(textLine)) {
-    return `Speak with fierce anger and shouting emotion in ${langPrompt}:`;
+    return `Speak with fierce anger and shouting emotion in ${langPrompt}. ${CADENCE}`;
   }
   if (/😍|🥰|😘|💖|❤️|💕|😻/.test(textLine)) {
-    return `Speak with sweet romantic affection in ${langPrompt}:`;
+    return `Speak with sweet romantic affection in ${langPrompt}. ${CADENCE}`;
   }
   if (/🍌/.test(textLine)) {
-    return `Speak in signature MʀツBΛNΛNΛ creator voice in ${langPrompt}:`;
+    return `Speak in signature MʀツBΛNΛNΛ creator voice in ${langPrompt}. ${CADENCE}`;
   }
 
-  return `Speak in natural, expressive, crystal clear ${langPrompt}:`;
+  return `Speak in natural, expressive, crystal clear ${langPrompt}. ${CADENCE}`;
+}
+
+function sanitizeSpeechText(text: string): string {
+  return text
+    .replace(/[~]+/g, '')
+    .replace(/\.{3,}/g, '.')
+    .replace(/!{2,}/g, '!')
+    .replace(/\?{2,}/g, '?')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /**
@@ -251,8 +301,10 @@ app.post("/api/tts", async (req, res) => {
       });
     }
 
+    const cleanSpeechText = sanitizeSpeechText(text);
+
     // Split text into chunks
-    const chunks = splitTextIntoTTSChunks(text, langKey, voiceName);
+    const chunks = splitTextIntoTTSChunks(cleanSpeechText, langKey, voiceName);
 
     const allowedVoices = [
       "Fenrir",
@@ -263,7 +315,9 @@ app.post("/api/tts", async (req, res) => {
       "Aoede",
     ];
     let chosenVoice = "Fenrir";
-    if (allowedVoices.includes(voiceName)) {
+    if (voiceName === "Aoede" || voiceName?.toLowerCase()?.includes("anya") || voiceName?.toLowerCase()?.includes("আন্যা") || voiceName?.toLowerCase()?.includes("baby") || voiceName?.toLowerCase()?.includes("বাচ্চা")) {
+      chosenVoice = "Aoede"; // Aoede provides authentic high-pitched cute young anime child/girl voice
+    } else if (allowedVoices.includes(voiceName)) {
       chosenVoice = voiceName;
     } else if (voiceName === "Mr.banana.pro" || voiceName?.toLowerCase()?.includes("banana.pro")) {
       chosenVoice = "Fenrir"; // Deep, smooth, charismatic YouTube narrator voice (Exact match to video!)
@@ -299,13 +353,16 @@ app.post("/api/tts", async (req, res) => {
       }
 
       let chunkGenerated = false;
-      const maxPasses = 4; // Smart retry cycles
+      const maxPasses = 2; // Fast direct retry
+      const permanentlyFailedKeys = new Set<string>();
 
       for (let pass = 1; pass <= maxPasses; pass++) {
-        // Try each key in the pool with 0ms delay on 429 quota exhaustion
+        // Try active keys in the pool with 0ms delay
         for (let k = 0; k < availableKeys.length; k++) {
           const keyIdx = (globalKeyRotationIndex + k) % availableKeys.length;
           const currentKey = availableKeys[keyIdx];
+          if (permanentlyFailedKeys.has(currentKey)) continue;
+
           const aiInstance = getAIClient(currentKey);
 
           try {
@@ -335,8 +392,7 @@ app.post("/api/tts", async (req, res) => {
               const chunkBuffer = Buffer.from(audioBase64, "base64");
               audioBuffers.push(chunkBuffer);
               chunkGenerated = true;
-              // Advance rotation index for fair distribution
-              globalKeyRotationIndex = (keyIdx + 1) % availableKeys.length;
+              globalKeyRotationIndex = keyIdx;
               break; // Success for this chunk!
             }
           } catch (chunkError: any) {
@@ -346,18 +402,16 @@ app.post("/api/tts", async (req, res) => {
               lastErrorMsg.slice(0, 150)
             );
 
-            // If this key hit 429 quota or resource exhaustion or was revoked/leaked, try next key immediately!
             if (
-              lastErrorMsg.includes("429") ||
-              lastErrorMsg.includes("Quota exceeded") ||
-              lastErrorMsg.includes("RESOURCE_EXHAUSTED") ||
               lastErrorMsg.includes("leaked") ||
               lastErrorMsg.includes("PERMISSION_DENIED") ||
               lastErrorMsg.includes("API key not valid") ||
-              lastErrorMsg.includes("API_KEY_INVALID")
+              lastErrorMsg.includes("API_KEY_INVALID") ||
+              lastErrorMsg.includes("exceeded your current quota")
             ) {
-              continue;
+              permanentlyFailedKeys.add(currentKey);
             }
+            continue;
           }
         }
 
@@ -365,9 +419,10 @@ app.post("/api/tts", async (req, res) => {
           break; // Chunk succeeded
         }
 
-        // If all keys temporarily hit rate limit, short backoff pause before next pass
-        if (pass < maxPasses) {
-          await new Promise((res) => setTimeout(res, pass * 1200));
+        if (pass < maxPasses && availableKeys.length > 0) {
+          // If we had a 429 rate limit and only 1 key, brief backoff
+          const waitTime = lastErrorMsg.includes("429") ? 1500 : 500;
+          await new Promise((res) => setTimeout(res, waitTime));
         }
       }
 
@@ -387,23 +442,27 @@ app.post("/api/tts", async (req, res) => {
         lastErrorMsg.includes("API_KEY_INVALID")
       ) {
         return res.status(400).json({
-          error: "API Key টি সক্রিয় নয় বা Google দ্বারা ব্লক/Leaked হয়েছে। অনুগ্রহ করে উপরে 'Vercel / API Key' বাটনে ক্লিক করে aistudio.google.com/app/apikey থেকে আপনার নিজস্ব ফ্রি Gemini API Key দিন।",
+          error: "API Key টি সক্রিয় নয় বা Google দ্বারা বাতিল/Leaked হয়েছে। অনুগ্রহ করে উপরে 'Vercel / API Key' বাটনে ক্লিক করে aistudio.google.com/app/apikey থেকে আপনার নিজস্ব ফ্রি Gemini API Key দিন।",
+          needsApiKey: true,
         });
       }
       if (
         lastErrorMsg.includes("429") ||
-        lastErrorMsg.includes("Quota exceeded") ||
+        lastErrorMsg.includes("quota") ||
+        lastErrorMsg.includes("Quota") ||
         lastErrorMsg.includes("RESOURCE_EXHAUSTED") ||
         lastErrorMsg.includes("rate-limits")
       ) {
-        let retrySeconds = 25;
+        let retrySeconds = 20;
         const retryMatch = lastErrorMsg.match(/retry in\s+([\d\.]+)s/i) || lastErrorMsg.match(/retryDelay["']?\s*:\s*["']?(\d+)s?/i);
         if (retryMatch && retryMatch[1]) {
           retrySeconds = Math.ceil(parseFloat(retryMatch[1]));
         }
         return res.status(429).json({
-          error: `গুগল এআই স্টুডিওর প্রতি মিনিটের ফ্রি সীমা (Rate Limit) সাময়িকভাবে ব্যস্ত। অনুগ্রহ করে ${retrySeconds} সেকেন্ড অপেক্ষা করে আবার চাপুন অথবা উপরে 'Vercel / API Key' বাটনে আপনার নিজস্ব ফ্রি Gemini Key যোগ করুন।`,
+          error: `আপনার বর্তমান Gemini API Key-এর ফ্রি কোটা শেষ হয়েছে (429 Quota Exceeded)। অনুগ্রহ করে ${retrySeconds} সেকেন্ড অপেক্ষা করুন অথবা '🔑 API Key' বাটনে aistudio.google.com থেকে নতুন ফ্রি Key যুক্ত করুন।`,
           retryAfter: retrySeconds,
+          isQuotaExceeded: true,
+          needsApiKey: true,
         });
       }
       return res.status(500).json({

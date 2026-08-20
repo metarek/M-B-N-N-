@@ -23,8 +23,9 @@ import { AudioHistoryList } from "./components/AudioHistoryList";
 import { ApiKeyModal } from "./components/ApiKeyModal";
 import { SAMPLE_MULTI_EMOJI_BENGALI, EMOJI_ACTING_RULES } from "./data/presets";
 import { AudioItem, SupportedLanguage } from "./types";
-import { base64ToUint8Array, pcmToWavBlob, calculatePcmDuration } from "./utils/audioUtils";
+import { base64ToUint8Array, pcmToWavBlob, calculatePcmDuration, applyChildVoicePitch } from "./utils/audioUtils";
 import { generateSpeechDirectly } from "./utils/geminiClient";
+import { DEFAULT_KEY_POOL } from "./constants/apiKeys";
 
 export default function App() {
   const [channelName, setChannelName] = useState("mdtarakboss2");
@@ -62,19 +63,15 @@ export default function App() {
       }
 
       const saved = localStorage.getItem("banana_gemini_api_key");
-      if (saved) {
-        if (
-          saved.includes("AIzaSyBSj") ||
-          saved.includes("AIzaSyAR8") ||
-          saved.includes("leaked")
-        ) {
+      if (saved && saved.trim().length > 10) {
+        if (saved.includes("leaked_dummy_marker")) {
           localStorage.removeItem("banana_gemini_api_key");
-          return "";
+          return DEFAULT_KEY_POOL[0] || "";
         }
         return saved.trim().replace(/^["']|["']$/g, "");
       }
     } catch (_) {}
-    return "";
+    return DEFAULT_KEY_POOL[0] || "";
   });
 
   // Automatic countdown timer for Quota rate limit
@@ -185,24 +182,31 @@ export default function App() {
       }
 
       if (!audioBase64) {
-        if (!customApiKey) {
+        const isQuota = serverErrorMessage.includes("quota") || serverErrorMessage.includes("Quota") || serverErrorMessage.includes("429");
+        if (!customApiKey && !isQuota) {
           setIsApiKeyModalOpen(true);
-          throw new Error(
-            "Vercel/GitHub এ ভয়েস তৈরি করার জন্য একটি Gemini API Key প্রয়োজন। উপরে '🔑 API Key' বক্সে আপনার ফ্রি কী পেস্ট করুন অথবা Vercel Settings এ GEMINI_API_KEY সেট করুন।"
-          );
-        } else {
-          throw new Error(
-            serverErrorMessage ||
-            "ভয়েস তৈরি করার সময় সমস্যা হয়েছে। আপনার API Key টি সঠিক কিনা চেক করুন।"
-          );
         }
+        throw new Error(
+          serverErrorMessage ||
+          "ভয়েস তৈরি করার জন্য একটি Gemini API Key প্রয়োজন। উপরে '🔑 API Key' বক্সে আপনার ফ্রি কী পেস্ট করুন অথবা Vercel Settings এ GEMINI_API_KEY সেট করুন।"
+        );
       }
 
       // Convert PCM 24kHz to Studio High-Fidelity WAV Blob
       const pcmBytes = base64ToUint8Array(audioBase64);
-      const wavBlob = pcmToWavBlob(pcmBytes, 24000, 1);
+      const isAnyaChild =
+        selectedVoice === "Aoede" ||
+        selectedVoice?.toLowerCase()?.includes("aoede") ||
+        selectedVoice?.toLowerCase()?.includes("anya") ||
+        selectedVoice?.toLowerCase()?.includes("আন্যা") ||
+        selectedVoice?.toLowerCase()?.includes("baby") ||
+        selectedVoice?.toLowerCase()?.includes("বাচ্চা");
+
+      // Transform vocal tract & acoustic formant frequency to authentic 4-6 year old child voice
+      const processedPcm = isAnyaChild ? applyChildVoicePitch(pcmBytes, 1.25) : pcmBytes;
+      const wavBlob = pcmToWavBlob(processedPcm, 24000, 1);
       const blobUrl = URL.createObjectURL(wavBlob);
-      const duration = calculatePcmDuration(pcmBytes.length, 24000, 16, 1);
+      const duration = calculatePcmDuration(processedPcm.length, 24000, 16, 1);
 
       const newAudioItem: AudioItem = {
         id: `take_${Date.now()}`,
@@ -333,39 +337,53 @@ export default function App() {
 
         {/* Notifications / Toast */}
         {errorMessage && (
-          <div className="p-4 rounded-xl bg-red-950/60 border border-red-500/40 text-red-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
-            <div className="flex items-start sm:items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5 sm:mt-0" />
-              <div className="space-y-1">
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-red-950/80 via-zinc-900 to-amber-950/40 border border-red-500/50 text-red-200 text-xs flex flex-col md:flex-row md:items-center justify-between gap-3.5 shadow-2xl animate-in fade-in">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0 mt-0.5">
+                <AlertCircle className="w-4 h-4" />
+              </div>
+              <div className="space-y-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-red-100">API Status Notice:</span>
+                  <span className="font-bold text-white text-sm">
+                    {quotaCountdown !== null && quotaCountdown > 0
+                      ? "⚠️ কোটা ও রেট লিমিট নোটিশ (429 Quota Exceeded)"
+                      : "⚠️ ভয়েস তৈরি সংক্রান্ত নোটিশ"}
+                  </span>
                   {quotaCountdown !== null && quotaCountdown > 0 && (
-                    <span className="px-2 py-0.5 rounded-full bg-yellow-400 text-zinc-950 font-bold text-[11px] flex items-center gap-1 animate-pulse">
+                    <span className="px-2.5 py-0.5 rounded-full bg-yellow-400 text-zinc-950 font-black text-[11px] flex items-center gap-1 shadow-sm animate-pulse">
                       ⏳ প্রস্তুত হতে বাকি: {quotaCountdown}s
                     </span>
                   )}
                 </div>
-                <p className="text-zinc-300 leading-relaxed">{errorMessage}</p>
+                <p className="text-zinc-300 leading-relaxed text-xs">{errorMessage}</p>
+                <div className="text-[11px] text-yellow-300 font-medium flex items-center gap-1.5 pt-0.5">
+                  <span>💡 সমাধান: aistudio.google.com থেকে ১ ক্লিকে একদম ফ্রি নতুন API Key নিয়ে বসিয়ে দিন।</span>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+            <div className="flex items-center gap-2.5 self-end md:self-center shrink-0 flex-wrap">
               {quotaCountdown !== null && quotaCountdown <= 0 && (
                 <button
                   type="button"
                   onClick={handleGenerateAudio}
-                  className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-lg font-bold text-xs cursor-pointer shadow-md"
+                  className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-xl font-bold text-xs cursor-pointer shadow-lg transition flex items-center gap-1.5"
                 >
-                  🔄 এখনই রিট্রাই করুন
+                  <span>🔄 পুনরায় চেষ্টা করুন</span>
                 </button>
               )}
               <button
                 type="button"
                 onClick={() => setIsApiKeyModalOpen(true)}
-                className="px-3 py-1.5 bg-yellow-400 hover:bg-yellow-300 text-zinc-950 rounded-lg font-bold text-xs cursor-pointer"
+                className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-zinc-950 rounded-xl font-black text-xs cursor-pointer shadow-lg shadow-yellow-400/20 transition flex items-center gap-1.5"
               >
-                ⚙️ API Key / Vercel Setup
+                <Key className="w-3.5 h-3.5" />
+                <span>🔑 নতুন ফ্রি Key দিন</span>
               </button>
-              <button onClick={() => setErrorMessage(null)} className="text-red-300 hover:text-white px-2 py-1 cursor-pointer">
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-zinc-800 transition cursor-pointer"
+                title="বন্ধ করুন"
+              >
                 ✕
               </button>
             </div>

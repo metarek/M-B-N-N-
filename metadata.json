@@ -1,6 +1,6 @@
 {
-  "name": "MʀツBΛNΛNΛ VOICE",
-  "description": "Ultra-capacity 20,000+ words AI Voice Studio with Emoji Expression Acting & Gemini 3.1 Flash TTS in Bengali, English, and Hindi.",
+  "name": "Mr Banana Voice Studio",
+  "description": "Ultra-capacity AI Voice Studio with Emoji Expression Acting & Gemini 3.1 Flash TTS in Bengali, English, and Hindi.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

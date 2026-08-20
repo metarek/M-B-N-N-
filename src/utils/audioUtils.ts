@@ -1,5 +1,6 @@
 /**
  * Helper to convert base64 PCM (16-bit, 24kHz mono) to a standard WAV Blob & AudioBuffer
+ * with anti-drag trailing audio cleaner and micro-fadeout.
  */
 
 export function base64ToUint8Array(base64: string): Uint8Array {
@@ -11,14 +12,87 @@ export function base64ToUint8Array(base64: string): Uint8Array {
   return bytes;
 }
 
+/**
+ * Trims trailing dead air, eliminates low-frequency decompression drag artifacts,
+ * and applies a clean 20ms micro-fadeout at the end of PCM to prevent trailing voice squeeze.
+ */
+/**
+ * Resamples PCM to shift pitch and vocal tract resonance upward (for authentic 4-6 year old child / toddler / Anya anime voice).
+ * Uses high-fidelity linear interpolation to preserve speech clarity without robotic artifacts.
+ */
+export function applyChildVoicePitch(pcmData: Uint8Array, pitchRatio = 1.25): Uint8Array {
+  if (pcmData.length < 100 || pitchRatio === 1.0) return pcmData;
+
+  const sampleCount = Math.floor(pcmData.length / 2);
+  const in16 = new Int16Array(pcmData.buffer, pcmData.byteOffset, sampleCount);
+
+  const outCount = Math.floor(sampleCount / pitchRatio);
+  const out16 = new Int16Array(outCount);
+
+  for (let i = 0; i < outCount; i++) {
+    const srcIndex = i * pitchRatio;
+    const i0 = Math.floor(srcIndex);
+    const i1 = Math.min(sampleCount - 1, i0 + 1);
+    const frac = srcIndex - i0;
+
+    // Linear interpolation
+    const val = in16[i0] * (1 - frac) + in16[i1] * frac;
+    out16[i] = Math.max(-32768, Math.min(32767, Math.round(val)));
+  }
+
+  return new Uint8Array(out16.buffer, out16.byteOffset, out16.byteLength);
+}
+
+export function cleanAndTrimPcm(pcmData: Uint8Array, sampleRate = 24000): Uint8Array {
+  if (pcmData.length < 100) return pcmData;
+
+  // 16-bit PCM = 2 bytes per sample
+  const sampleCount = Math.floor(pcmData.length / 2);
+  const int16Array = new Int16Array(pcmData.buffer, pcmData.byteOffset, sampleCount);
+
+  // Scan backwards to find the end of active voice (energy threshold)
+  const threshold = 180; // Amplitude threshold for silence/low rumble
+  let lastActiveSample = sampleCount - 1;
+
+  for (let i = sampleCount - 1; i >= 0; i--) {
+    if (Math.abs(int16Array[i]) > threshold) {
+      // Add a small 40ms safety buffer (960 samples at 24kHz) after speech ends
+      lastActiveSample = Math.min(sampleCount - 1, i + Math.floor(sampleRate * 0.04));
+      break;
+    }
+  }
+
+  // Ensure minimum valid length
+  const trimmedSampleCount = Math.max(Math.floor(sampleRate * 0.1), lastActiveSample + 1);
+  const cleanedInt16 = new Int16Array(trimmedSampleCount);
+  cleanedInt16.set(int16Array.subarray(0, trimmedSampleCount));
+
+  // Apply smooth 20ms micro-fadeout at the end (480 samples at 24kHz) to eliminate sudden cut/drag
+  const fadeOutSamples = Math.min(trimmedSampleCount, Math.floor(sampleRate * 0.02));
+  const fadeStart = trimmedSampleCount - fadeOutSamples;
+
+  for (let i = 0; i < fadeOutSamples; i++) {
+    const gain = Math.cos((i / fadeOutSamples) * (Math.PI / 2)); // Smooth cosine fadeout curve
+    cleanedInt16[fadeStart + i] = Math.round(cleanedInt16[fadeStart + i] * gain);
+  }
+
+  return new Uint8Array(cleanedInt16.buffer, cleanedInt16.byteOffset, cleanedInt16.byteLength);
+}
+
 export function pcmToWavBlob(pcmData: Uint8Array, sampleRate = 24000, numChannels = 1): Blob {
+  // Clean PCM by eliminating trailing drag & artifacts
+  const cleanPcm = cleanAndTrimPcm(pcmData, sampleRate);
+
   const header = new ArrayBuffer(44);
   const view = new DataView(header);
 
   // RIFF chunk descriptor
   writeString(view, 0, 'RIFF');
-  view.setUint32(4, 36 + pcmData.length, true); // Total file length - 8
-  writeString(view, 8, 'WAVE');
+  view.setUint32(4, 36 + cleanPcm.length, true); // Total file length - 8
+  view.setUint8(8, 'W'.charCodeAt(0));
+  view.setUint8(9, 'A'.charCodeAt(0));
+  view.setUint8(10, 'V'.charCodeAt(0));
+  view.setUint8(11, 'E'.charCodeAt(0));
 
   // "fmt " sub-chunk
   writeString(view, 12, 'fmt ');
@@ -32,9 +106,9 @@ export function pcmToWavBlob(pcmData: Uint8Array, sampleRate = 24000, numChannel
 
   // "data" sub-chunk
   writeString(view, 36, 'data');
-  view.setUint32(40, pcmData.length, true); // Subchunk2Size
+  view.setUint32(40, cleanPcm.length, true); // Subchunk2Size
 
-  return new Blob([header, pcmData], { type: 'audio/wav' });
+  return new Blob([header, cleanPcm], { type: 'audio/wav' });
 }
 
 function writeString(view: DataView, offset: number, string: string) {

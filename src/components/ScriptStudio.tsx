@@ -508,7 +508,9 @@ export function ScriptStudio({
                       <div
                         className={`w-9 h-9 rounded-xl bg-gradient-to-tr ${voice.color} flex items-center justify-center text-white text-base font-bold shadow-md`}
                       >
-                        {voice.id?.includes("gaming")
+                        {voice.id === "Aoede" || voice.id?.toLowerCase()?.includes("baby")
+                          ? "👧"
+                          : voice.id?.includes("gaming")
                           ? "🎮"
                           : voice.id === "Mr.banana" || voice.id === "Puck"
                           ? "🍌"
@@ -518,8 +520,16 @@ export function ScriptStudio({
                       </div>
                       <div>
                         <div className="text-sm font-bold text-white leading-tight flex items-center gap-1.5">
-                          <span>{voice.name.split(" (")[0]}</span>
-                          {voice.id?.includes("gaming") ? (
+                          <span>
+                            {voice.id === "Aoede"
+                              ? "👧 Anya Forger"
+                              : voice.name.split(" (")[0]}
+                          </span>
+                          {voice.id === "Aoede" ? (
+                            <span className="text-[9px] bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white font-black px-1.5 py-0.2 rounded-full shadow-sm animate-pulse">
+                              SPY x FAMILY
+                            </span>
+                          ) : voice.id?.includes("gaming") ? (
                             <span className="text-[9px] bg-gradient-to-r from-red-500 to-amber-500 text-white font-black px-1.5 py-0.2 rounded-full shadow-sm animate-pulse">
                               FF GAMING
                             </span>
