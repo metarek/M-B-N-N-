@@ -18,7 +18,13 @@ let globalKeyRotationIndex = 0;
 function getAllAvailableKeys(userKey?: string): string[] {
   const keys: string[] = [];
   
-  // Prioritize valid server environment keys first for blazing fast speed
+  // 1. If user provided custom key, prioritize it FIRST
+  if (userKey && typeof userKey === "string") {
+    const userKeys = userKey.split(/[,\n]/).map(k => k.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+    keys.push(...userKeys);
+  }
+
+  // 2. Server environment keys as fallback
   const envSources = [
     process.env.GEMINI_API_KEY,
     process.env.VITE_GEMINI_API_KEY,
@@ -32,10 +38,7 @@ function getAllAvailableKeys(userKey?: string): string[] {
       keys.push(...splitKeys);
     }
   }
-  if (userKey && typeof userKey === "string") {
-    const userKeys = userKey.split(/[,\n]/).map(k => k.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
-    keys.push(...userKeys);
-  }
+
   if (DEFAULT_KEY_POOL && Array.isArray(DEFAULT_KEY_POOL)) {
     keys.push(...DEFAULT_KEY_POOL);
   }
@@ -366,8 +369,6 @@ app.post("/api/tts", async (req, res) => {
           const aiInstance = getAIClient(currentKey);
 
           const modelsToTry = [
-            "gemini-2.5-flash",
-            "gemini-2.0-flash",
             "gemini-3.1-flash-tts-preview",
           ];
 

@@ -197,13 +197,9 @@ export default function App() {
       }
 
       if (!audioBase64) {
-        const isQuota = serverErrorMessage.includes("quota") || serverErrorMessage.includes("Quota") || serverErrorMessage.includes("429");
-        if (!customApiKey && !isQuota) {
-          setIsApiKeyModalOpen(true);
-        }
         throw new Error(
           serverErrorMessage ||
-          "ভয়েস তৈরি করার জন্য একটি Gemini API Key প্রয়োজন। উপরে '🔑 API Key' বক্সে আপনার ফ্রি কী পেস্ট করুন অথবা Vercel Settings এ GEMINI_API_KEY সেট করুন।"
+          "ভয়েস তৈরি করার জন্য একটি সক্রিয় Gemini API Key প্রয়োজন।"
         );
       }
 
@@ -276,7 +272,6 @@ export default function App() {
         msg.includes("PERMISSION_DENIED") ||
         msg.includes("INVALID_ARGUMENT")
       ) {
-        setIsApiKeyModalOpen(true);
         setErrorMessage(
           "আপনার API Key টি মেয়াদোত্তীর্ণ বা গুগল কর্তৃক বাতিল হয়েছে। অনুগ্রহ করে aistudio.google.com/app/apikey থেকে ১ ক্লিকে একদম ফ্রি নতুন Key নিয়ে উপরে সেভ করুন।"
         );
