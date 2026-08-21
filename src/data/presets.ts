@@ -199,12 +199,13 @@ export const VOICES: VoiceOption[] = [
   // --- FEMALE VOICES (মেয়ের কণ্ঠ) ---
   {
     id: "Kore",
-    name: "Kore (Sweet & Crystal Clear)",
+    name: "Kore (🌸 Sweet, Soft & Romantic — মায়াবী ও হৃদয়ছোঁয়া মিষ্টি কণ্ঠ)",
     gender: "Female",
-    description: "মিষ্টি, আবেগময়, স্ফটিকের মতো পরিষ্কার উচ্চারণ ও নিখুঁত ফিমেল ভয়েস",
-    bengaliVibe: "মিষ্টি, আবেগময় ও হৃদয়ছোঁয়া স্পষ্ট কণ্ঠ",
-    color: "from-pink-500 via-rose-500 to-red-400",
-    tag: "👩 সুইট ফিমেল",
+    description: "অত্যন্ত মিষ্টি, নরম, মায়াবী ও আকর্ষণীয় নারী কণ্ঠ — রোমান্টিক সংলাপ, নাটক, আবেগঘন গল্প বলা ও মোহময় বাচনভঙ্গির জন্য নিখুঁত (Sweet, Soft, Melodious & Romantic Voice)",
+    bengaliVibe: "🌸 অত্যন্ত মিষ্টি, নরম, মায়াবী, আকর্ষণীয় ও রোমান্টিক কণ্ঠ",
+    color: "from-pink-500 via-rose-500 to-purple-500",
+    tag: "🌸 মায়াবী রোমান্টিক",
+    isViral: true,
   },
   {
     id: "Aoede",
@@ -312,6 +313,18 @@ export const SCRIPT_PRESETS: ScriptPreset[] = [
     language: "hindi",
     text: SAMPLE_MULTI_EMOJI_HINDI,
     recommendedVoice: "Mr.banana",
+  },
+  {
+    id: "bn_female_romantic_drama",
+    title: "🌸 Kore Romantic & Emotional Drama (মায়াবী রোমান্টিক ও নাটক সংলাপ)",
+    bengaliTitle: "🌸 মায়াবী রোমান্টিক নাটক ও গল্প",
+    language: "bengali",
+    text: `😍 জানো... তুমি যখন চোখের দিকে তাকিয়ে মৃদু হাসো, আমার হৃদস্পন্দন যেন এক মুহূর্তের জন্য থমকে যায়...
+🥰 সারাটা জীবন তোমার পাশে এভাবে নিঃশব্দে হাতটি ধরে কাটিয়ে দিতে পারি...
+🤫 শোনো... এই অনুভূতিটা কাউকে বলিনি কখনো, শুধু তোমাকেই বলছি...
+😭 মাঝে মাঝে খুব ভয় হয়, যদি কখনো এই মায়াবী সুন্দর মুহূর্তগুলো হারিয়ে যায়...
+😍 তবে যাই হোক না কেন, আমার প্রতিটি নিঃশ্বাসে কেবল তোমার জন্যই ভালোবাসা থাকবে।`,
+    recommendedVoice: "Kore",
   },
   {
     id: "bn_female_vlog_story",

@@ -213,8 +213,23 @@ export default function App() {
         selectedVoice?.toLowerCase()?.includes("baby") ||
         selectedVoice?.toLowerCase()?.includes("বাচ্চা");
 
-      // Transform vocal tract & acoustic formant frequency to authentic 4-6 year old child voice
-      const processedPcm = isAnyaChild ? applyChildVoicePitch(pcmBytes, 1.25) : pcmBytes;
+      // Transform vocal tract & acoustic formant frequency
+      // - Anya: ~4-6 year old cute anime child (pitch 1.25x)
+      // - Kore / Teen girl: authentic 12-15 year old youthful sweet bright teenage girl (pitch 1.13x)
+      const isKoreTeen =
+        !isAnyaChild &&
+        (selectedVoice === "Kore" ||
+          selectedVoice?.toLowerCase()?.includes("kore") ||
+          selectedVoice?.toLowerCase()?.includes("মেয়ে") ||
+          selectedVoice?.toLowerCase()?.includes("কিশোরী"));
+
+      let processedPcm = pcmBytes;
+      if (isAnyaChild) {
+        processedPcm = applyChildVoicePitch(pcmBytes, 1.25);
+      } else if (isKoreTeen) {
+        processedPcm = applyChildVoicePitch(pcmBytes, 1.13); // High-fidelity lift into 12-15 year old teen girl frequency
+      }
+
       const wavBlob = pcmToWavBlob(processedPcm, 24000, 1);
       const blobUrl = URL.createObjectURL(wavBlob);
       const duration = calculatePcmDuration(processedPcm.length, 24000, 16, 1);

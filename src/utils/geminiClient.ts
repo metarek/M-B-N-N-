@@ -93,6 +93,33 @@ export function getEmojiActingDirective(
     return `Speak as Anya Forger from Spy x Family: A 4-5 year old ultra squeaky, spoiled, adorable anime toddler girl with extreme baby nakra (মিষ্টি নেকামি), funny childish innocence, cute squeaks and fast lively toddler rhythm in ${langPrompt}. ${anyaCadence}`;
   }
 
+  const isKoreSweetRomanticModel =
+    voiceName === "Kore" ||
+    voiceName?.toLowerCase()?.includes("kore") ||
+    voiceName?.toLowerCase()?.includes("মিষ্টি") ||
+    voiceName?.toLowerCase()?.includes("রোমান্টিক") ||
+    voiceName?.toLowerCase()?.includes("মেয়ে");
+
+  if (isKoreSweetRomanticModel) {
+    const koreCadence = "Character Persona: A 12 to 15 year old young teenage schoolgirl (১২-১৫ বছরের কিশোরী মেয়ে). Voice Characteristics: Naturally high-pitched, sweet, bright, light, and charming young teenage voice. Completely avoid adult woman/mature deep low tones. Speak with youthful softness, innocent charm, cheerful cadence, and crystal-clear pronunciation in Bengali.";
+    if (/😍|🥰|😘|💖|❤️|💕|😻|ভালোবাসি|প্রেম|প্রিয়|হৃদয়|মন|কাছে/i.test(textLine)) {
+      return `Speak in a very sweet, soft, shy, and heartfelt 12-15 year old teenage girl's voice with innocent charm and bright melodic warmth in ${langPrompt}. ${koreCadence}`;
+    }
+    if (/😭|😢|😿|🥺|💔|কষ্ট|বেদনা|অশ্রু|ব্যথা|কেন এমন হলো|ছেড়ে গেলে/i.test(textLine)) {
+      return `Speak in an emotional, fragile, tearful, and tender 12-15 year old young girl's voice with soft trembling sincerity in ${langPrompt}. ${koreCadence}`;
+    }
+    if (/😂|🤣|হিহি|হাহা|হাসি|আনন্দ|মজা|মুচকি|ধুর|আরে/i.test(textLine)) {
+      return `Speak with a bubbly, cheerful, high-pitched, giggly 12-15 year old teenage girl's laughter and lively bounce in ${langPrompt}. ${koreCadence}`;
+    }
+    if (/🤫|গোপন|ফিসফিস|আস্তে|শোনো|বলছি/i.test(textLine)) {
+      return `Speak in a whispery, curious, sweet teenage girl storytelling tone in ${langPrompt}. ${koreCadence}`;
+    }
+    if (/\?|কি\?|কেন\?|সত্যি\?|তাই\?/i.test(textLine)) {
+      return `Speak in an inquisitive, bright, high-pitched teenage girl's questioning tone in ${langPrompt}. ${koreCadence}`;
+    }
+    return `Speak in a naturally sweet, high-pitched, light, and cute 12-15 year old teenage girl's voice with lively natural flow in ${langPrompt}. ${koreCadence}`;
+  }
+
   const isDeepBananaModel =
     voiceName === "Mr.banana" ||
     voiceName === "MrBanana" ||
