@@ -19,7 +19,7 @@ interface ApiKeyModalProps {
   isOpen: boolean;
   onClose: () => void;
   apiKey: string;
-  onSaveApiKey: (key: string) => void;
+  onSaveApiKey: (key: string, autoGenerate?: boolean) => void;
 }
 
 export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
@@ -44,14 +44,28 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSave = () => {
+  const trimmedKey = inputKey.trim().replace(/^["']|["']$/g, "");
+  const isAQToken = trimmedKey.startsWith("AQ.") || trimmedKey.startsWith("AQ_") || (trimmedKey.startsWith("AQ") && trimmedKey.length > 30);
+  const isValidGeminiFormat = trimmedKey.startsWith("AIzaSy");
+
+  const handleSaveAndGenerate = () => {
     const cleanKey = inputKey.trim().replace(/^["']|["']$/g, "");
-    onSaveApiKey(cleanKey);
+    onSaveApiKey(cleanKey, true);
     setSavedSuccess(true);
     setTimeout(() => {
       setSavedSuccess(false);
       onClose();
-    }, 1200);
+    }, 400);
+  };
+
+  const handleSaveOnly = () => {
+    const cleanKey = inputKey.trim().replace(/^["']|["']$/g, "");
+    onSaveApiKey(cleanKey, false);
+    setSavedSuccess(true);
+    setTimeout(() => {
+      setSavedSuccess(false);
+      onClose();
+    }, 500);
   };
 
   const handlePasteFromClipboard = async () => {
@@ -65,7 +79,6 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
       }
     } catch (err) {
       console.warn("Clipboard read error, user can paste manually", err);
-      // Fallback: Focus input and alert
       const input = document.getElementById("api-key-input-field") as HTMLInputElement;
       if (input) {
         input.focus();
@@ -260,6 +273,27 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             </button>
           </div>
 
+          {/* AQ Format Warning */}
+          {isAQToken && (
+            <div className="p-2.5 rounded-xl text-xs bg-amber-950/70 border border-amber-500/50 text-amber-200 space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>এটি একটি Google Cloud / AQ টোকেন</span>
+              </div>
+              <p className="text-[11px] leading-relaxed">
+                Gemini TTS ভয়েসের জন্য <strong>AIzaSy...</strong> দিয়ে শুরু হওয়া ফ্রি API Key প্রয়োজন। অনুগ্রহ করে নিচের লিংকে ক্লিক করে ১ ক্লিকে আসল Key নিন।
+              </p>
+            </div>
+          )}
+
+          {/* Valid Key Indicator */}
+          {isValidGeminiFormat && (
+            <div className="p-2 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[11px] flex items-center gap-1.5 font-semibold">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>সঠিক Gemini API Key ফরম্যাট শনাক্ত হয়েছে!</span>
+            </div>
+          )}
+
           <div className="p-2 rounded-lg bg-yellow-400/10 border border-yellow-400/20 text-[11px] text-yellow-200 flex items-center gap-1.5">
             <span className="font-bold text-yellow-400">💡 প্রো টিপ (Quota Bypass):</span>
             <span>একাধিক Key কমা (,) দিয়ে দিলে একটার কোটা শেষ হলে স্বয়ংক্রিয়ভাবে পরবর্তী কী দিয়ে ভয়েস তৈরি হবে!</span>
@@ -358,27 +392,38 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
         {savedSuccess && (
           <div className="p-2.5 bg-emerald-950/80 border border-emerald-500/50 rounded-xl text-emerald-300 text-xs flex items-center gap-2">
             <Check className="w-4 h-4 text-emerald-400" />
-            <span className="font-semibold">API Key সফলভাবে সংরক্ষিত হয়েছে! এখন ভয়েস তৈরি করুন।</span>
+            <span className="font-semibold">API Key সংরক্ষিত হয়েছে! সাথে সাথে ভয়েস তৈরি শুরু হচ্ছে...</span>
           </div>
         )}
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-2.5 pt-1">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
           >
             বাতিল
           </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-yellow-400 hover:bg-yellow-300 text-zinc-950 transition cursor-pointer shadow-lg shadow-yellow-400/25 flex items-center gap-1.5"
-          >
-            <Check className="w-4 h-4" />
-            <span>সংরক্ষণ করুন (Save Key)</span>
-          </button>
+          
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSaveOnly}
+              className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition cursor-pointer border border-zinc-700 flex items-center gap-1.5"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>শুধু সংরক্ষণ</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveAndGenerate}
+              className="px-5 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-zinc-950 transition cursor-pointer shadow-lg shadow-yellow-500/25 flex items-center gap-1.5"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>🚀 সেভ করুন ও সাথে সাথে ভয়েস শুনুন</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

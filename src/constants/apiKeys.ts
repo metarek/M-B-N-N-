@@ -3,21 +3,7 @@
  * Supports server-side (process.env) and client-side (Vite / LocalStorage / Fallback Pool)
  */
 
-function decodeKey(b64: string): string {
-  try {
-    if (typeof atob !== "undefined") return atob(b64);
-    if (typeof Buffer !== "undefined") return Buffer.from(b64, "base64").toString("utf-8");
-  } catch {
-    // fallback
-  }
-  return "";
-}
-
-export const DEFAULT_KEY_POOL: string[] = [
-  decodeKey("QUl6YVN5QlNqQVcwTE9HenA3Y1BqMHFNaV职责VWMCtpNzBhSzB4c1p2TQ=="), // Key 1 Base64 safe
-  "AIzaSyBSjAW0LOGzp7cPj0qMiU0Zi70aK0xsZvM",
-  "AIzaSyAR8RAi4YWaXHU9AT3oDBZIgU3yOP7se8U",
-].filter((k) => k && k.length > 10);
+export const DEFAULT_KEY_POOL: string[] = [];
 
 export function getCleanKeyArray(rawKeyInput?: string): string[] {
   if (!rawKeyInput || typeof rawKeyInput !== "string") return DEFAULT_KEY_POOL;

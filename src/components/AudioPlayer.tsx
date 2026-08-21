@@ -53,8 +53,18 @@ export function AudioPlayer({
   useEffect(() => {
     if (audioRef.current && audioBlobUrl) {
       audioRef.current.load();
-      setIsPlaying(false);
       setCurrentTime(0);
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch((err) => {
+            console.log("Autoplay was prevented by browser, waiting for user click:", err);
+            setIsPlaying(false);
+          });
+      }
     }
   }, [audioBlobUrl]);
 

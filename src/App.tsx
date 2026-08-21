@@ -90,13 +90,18 @@ export default function App() {
     return () => clearInterval(interval);
   }, [quotaCountdown]);
 
-  const handleSaveApiKey = (newKey: string) => {
+  const handleSaveApiKey = (newKey: string, autoGenerate: boolean = false) => {
     setCustomApiKey(newKey);
     if (newKey) {
       localStorage.setItem("banana_gemini_api_key", newKey);
       setQuotaCountdown(null);
       setErrorMessage(null);
-      setSuccessToast("🔑 API Key সফলভাবে সংরক্ষিত হয়েছে! এখন স্টুডিও ভয়েস তৈরি করুন।");
+      setSuccessToast("🔑 API Key সংরক্ষিত হয়েছে! ভয়েস তৈরি হচ্ছে...");
+      if (autoGenerate || text.trim()) {
+        setTimeout(() => {
+          handleGenerateAudio(newKey);
+        }, 100);
+      }
     } else {
       localStorage.removeItem("banana_gemini_api_key");
     }
@@ -115,12 +120,14 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleGenerateAudio = async () => {
+  const handleGenerateAudio = async (overrideKey?: string) => {
     if (!text.trim()) return;
 
     setIsLoadingAudio(true);
     setErrorMessage(null);
     setSuccessToast(null);
+
+    const activeKey = (overrideKey !== undefined ? overrideKey : customApiKey)?.trim();
 
     let audioBase64: string | null = null;
     let chunksCount = 1;
@@ -138,7 +145,7 @@ export default function App() {
             text: text.trim(),
             voiceName: selectedVoice,
             language: language,
-            apiKey: customApiKey ? customApiKey.trim() : undefined,
+            apiKey: activeKey ? activeKey : undefined,
           }),
         });
 
@@ -170,7 +177,7 @@ export default function App() {
             text.trim(),
             selectedVoice,
             language,
-            customApiKey || undefined
+            activeKey || undefined
           );
           if (audioBase64) {
             serverResponseWorked = true;
@@ -253,6 +260,17 @@ export default function App() {
         setQuotaCountdown(retrySec);
         setErrorMessage(
           `গুগল এপিআই-এর প্রতি মিনিটের ফ্রি কোটা সাময়িকভাবে শেষ হয়েছে (429 Quota Exceeded)। অনুগ্রহ করে ${retrySec} সেকেন্ড অপেক্ষা করুন অথবা উপরে '🔑 API Key' বাটনে আপনার নিজস্ব আরেকটি ফ্রি Key দিন।`
+        );
+      } else if (
+        msg.includes("leaked") ||
+        msg.includes("API key not valid") ||
+        msg.includes("API_KEY_INVALID") ||
+        msg.includes("PERMISSION_DENIED") ||
+        msg.includes("INVALID_ARGUMENT")
+      ) {
+        setIsApiKeyModalOpen(true);
+        setErrorMessage(
+          "আপনার API Key টি মেয়াদোত্তীর্ণ বা গুগল কর্তৃক বাতিল হয়েছে। অনুগ্রহ করে aistudio.google.com/app/apikey থেকে ১ ক্লিকে একদম ফ্রি নতুন Key নিয়ে উপরে সেভ করুন।"
         );
       } else {
         setErrorMessage(msg || "ভয়েস তৈরি করার সময় সমস্যা হয়েছে। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।");
