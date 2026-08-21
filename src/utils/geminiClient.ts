@@ -323,57 +323,73 @@ export async function generateSpeechDirectly(
 
         const ai = new GoogleGenAI({ apiKey: currentKey });
 
-        try {
-          const currentPrompt =
-            pass === 1
-              ? promptText
-              : `${chunk.directive || `Speak as a Bangladeshi gaming YouTuber in ${langKey}:`} ${chunk.text}`;
+        const modelsToTry = [
+          "gemini-2.5-flash",
+          "gemini-2.0-flash",
+          "gemini-3.1-flash-tts-preview",
+        ];
 
-          const response = await ai.models.generateContent({
-            model: "gemini-3.1-flash-tts-preview",
-            contents: [{ parts: [{ text: currentPrompt }] }],
-            config: {
-              responseModalities: [Modality.AUDIO],
-              speechConfig: {
-                voiceConfig: {
-                  prebuiltVoiceConfig: { voiceName: chosenVoice },
+        for (const modelName of modelsToTry) {
+          try {
+            const currentPrompt =
+              pass === 1
+                ? promptText
+                : `${chunk.directive || `Speak as a Bangladeshi gaming YouTuber in ${langKey}:`} ${chunk.text}`;
+
+            const response = await ai.models.generateContent({
+              model: modelName,
+              contents: [{ parts: [{ text: currentPrompt }] }],
+              config: {
+                responseModalities: [Modality.AUDIO],
+                speechConfig: {
+                  voiceConfig: {
+                    prebuiltVoiceConfig: { voiceName: chosenVoice },
+                  },
                 },
               },
-            },
-          });
+            });
 
-          const candidate = response.candidates?.[0];
-          const audioPart = candidate?.content?.parts?.find((p: any) => p.inlineData && p.inlineData.data);
-          const audioBase64 = audioPart?.inlineData?.data || candidate?.content?.parts?.[0]?.inlineData?.data;
+            const candidate = response.candidates?.[0];
+            const audioPart = candidate?.content?.parts?.find((p: any) => p.inlineData && p.inlineData.data);
+            const audioBase64 = audioPart?.inlineData?.data || candidate?.content?.parts?.[0]?.inlineData?.data;
 
-          if (audioBase64) {
-            const binaryString = atob(audioBase64);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let j = 0; j < binaryString.length; j++) {
-              bytes[j] = binaryString.charCodeAt(j);
+            if (audioBase64) {
+              const binaryString = atob(audioBase64);
+              const bytes = new Uint8Array(binaryString.length);
+              for (let j = 0; j < binaryString.length; j++) {
+                bytes[j] = binaryString.charCodeAt(j);
+              }
+              audioBuffers.push(bytes);
+              chunkGenerated = true;
+              clientRotationIndex = keyIdx;
+              break; // Chunk succeeded!
             }
-            audioBuffers.push(bytes);
-            chunkGenerated = true;
-            clientRotationIndex = keyIdx;
-            break; // Chunk succeeded!
-          }
-        } catch (chunkError: any) {
-          lastErrorMsg = chunkError?.message || String(chunkError);
-          console.warn(
-            `Client Chunk ${i + 1}/${chunks.length} (Key ${keyIdx + 1}/${availableKeys.length}, pass ${pass}) error:`,
-            lastErrorMsg.slice(0, 150)
-          );
+          } catch (chunkError: any) {
+            lastErrorMsg = chunkError?.message || String(chunkError);
+            console.warn(
+              `Client Chunk ${i + 1}/${chunks.length} (Model ${modelName}, Key ${keyIdx + 1}/${availableKeys.length}, pass ${pass}) error:`,
+              lastErrorMsg.slice(0, 150)
+            );
 
-          if (
-            lastErrorMsg.includes("leaked") ||
-            lastErrorMsg.includes("PERMISSION_DENIED") ||
-            lastErrorMsg.includes("API key not valid") ||
-            lastErrorMsg.includes("API_KEY_INVALID") ||
-            lastErrorMsg.includes("exceeded your current quota")
-          ) {
-            permanentlyFailedKeys.add(currentKey);
+            if (
+              lastErrorMsg.includes("leaked") ||
+              lastErrorMsg.includes("PERMISSION_DENIED") ||
+              lastErrorMsg.includes("API key not valid") ||
+              lastErrorMsg.includes("API_KEY_INVALID") ||
+              lastErrorMsg.includes("exceeded your current quota")
+            ) {
+              permanentlyFailedKeys.add(currentKey);
+              break; // Don't try other models with dead key
+            }
+            if (lastErrorMsg.includes("not found") || lastErrorMsg.includes("404") || lastErrorMsg.includes("unsupported")) {
+              continue;
+            }
+            break;
           }
-          continue;
+        }
+
+        if (chunkGenerated) {
+          break;
         }
       }
 

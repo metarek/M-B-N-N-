@@ -628,7 +628,7 @@ export function ScriptStudio({
               {isLoadingAudio ? (
                 <>
                   <RefreshCw className="w-5 h-5 animate-spin text-zinc-950" />
-                  <span>Processing & Generating Multi-Line Voice...</span>
+                  <span>🎙️ স্টুডিও ভয়েস তৈরি হচ্ছে...</span>
                 </>
               ) : (
                 <>

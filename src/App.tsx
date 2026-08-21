@@ -120,27 +120,33 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleGenerateAudio = async (overrideKey?: string) => {
+  const handleGenerateAudio = async (overrideKey?: string | unknown) => {
     if (!text.trim()) return;
+
+    const keyString =
+      typeof overrideKey === "string" ? overrideKey : typeof customApiKey === "string" ? customApiKey : "";
+    const activeKey = keyString.trim();
 
     setIsLoadingAudio(true);
     setErrorMessage(null);
     setSuccessToast(null);
 
-    const activeKey = (overrideKey !== undefined ? overrideKey : customApiKey)?.trim();
-
     let audioBase64: string | null = null;
     let chunksCount = 1;
 
     try {
-      // Step 1: Request Speech from Server TTS Engine
+      // Step 1: Request Speech from Server TTS Engine with 25s timeout
       let serverResponseWorked = false;
       let serverErrorMessage = "";
 
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 25000);
+
         const response = await fetch("/api/tts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({
             text: text.trim(),
             voiceName: selectedVoice,
@@ -149,6 +155,7 @@ export default function App() {
           }),
         });
 
+        clearTimeout(timeoutId);
         const contentType = response.headers.get("content-type") || "";
 
         if (response.ok && contentType.includes("application/json")) {
@@ -166,8 +173,12 @@ export default function App() {
           }
         }
       } catch (serverErr: any) {
-        console.warn("Server TTS connection error:", serverErr);
-        serverErrorMessage = "সার্ভারের সাথে সংযোগ স্থাপন করা সম্ভব হয়নি।";
+        console.warn("Server TTS connection / timeout error:", serverErr);
+        if (serverErr?.name === "AbortError") {
+          serverErrorMessage = "সার্ভার থেকে রেসপন্স পেতে দেরি হচ্ছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন।";
+        } else {
+          serverErrorMessage = "সার্ভারের সাথে সংযোগ স্থাপন করা সম্ভব হয়নি।";
+        }
       }
 
       // Step 2: If server TTS didn't succeed, try direct client generation (using custom key, localStorage, or VITE_GEMINI_API_KEY)
