@@ -33,10 +33,7 @@ export default function App() {
   const [daysTaken, setDaysTaken] = useState(7);
 
   const [activeTab, setActiveTab] = useState<"studio" | "badge" | "emojis" | "story">("studio");
-  const [text, setText] = useState(`এটা স্নাইপার, আর এটা ফাস্ট রাশার। পার্থক্য কি?
-স্নাইপার এমন একজন খেলোয়াড় যে দূর থেকে এনিমিকে টার্গেট করে। সে নিরাপদ পজিশন নেয়, সুযোগের অপেক্ষা করে, এবং দূর থেকেই নির্ভুল শট দিয়ে এনিমিকে দুর্বল বা নক করার চেষ্টা করে। তার সবচেয়ে বড় শক্তি এইম, ধৈর্য এবং সঠিক সময়ে শট নেওয়া।
-অন্যদিকে ফাস্ট রাশার এমন একজন খেলোয়াড় যে সবার আগে এনিমির দিকে এগিয়ে যায় এবং ফাইট শুরু করে। তার কাজ হলো এনিমির অবস্থান বের করা, প্রতিপক্ষের উপর প্রথম চাপ তৈরি করা এবং নিজের টিমের জন্য ফাইটের সুযোগ তৈরি করা। তাই তার জন্য দ্রুত মুভমেন্ট সাহস এবং দ্রুত সিদ্ধান্ত নেওয়া খুব গুরুত্বপূর্ণ।
-তো গাইজ, তুমি কোন রোলে খেলতে বেশি পছন্দ করো? স্নাইপার নাকি ফাস্ট রাশার? অবশ্যই কমেন্ট করে জানাও।`);
+  const [text, setText] = useState("");
   const [selectedVoice, setSelectedVoice] = useState("Mr.banana.pro");
   const [language, setLanguage] = useState<SupportedLanguage>("bengali");
 

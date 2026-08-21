@@ -304,7 +304,7 @@ export function ScriptStudio({
             rows={7}
             value={text}
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)}
-            placeholder="এখানে আপনার স্ক্রিপ্ট বা গল্প লিখুন। লাইনের শুরুতে 😭 বা 😂 বা 😡 দিন চমৎকার ইমোশনাল অ্যাক্টিং এর জন্য..."
+            placeholder="আপনার ডায়লগ বা স্ক্রিপ্ট এখানে লিখুন..."
             className="w-full rounded-xl bg-zinc-950/90 border border-zinc-700/80 p-4 text-sm md:text-base text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition resize-y leading-relaxed font-sans"
           />
 
